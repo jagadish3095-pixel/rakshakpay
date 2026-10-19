@@ -6,4 +6,5 @@ export 'src/live.dart';
 export 'src/location.dart';
 export 'src/models.dart';
 export 'src/money.dart';
+export 'src/saved_logins.dart';
 export 'src/widgets.dart';

@@ -18,14 +18,25 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _busy = false;
   bool _hide = true;
+  bool _remember = true;
+  List<SavedLogin> _saved = [];
 
-  Future<void> _login() async {
-    if (_id.text.isEmpty || _password.text.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _saved = savedLogins.all();
+  }
+
+  Future<void> _login(String loginId, String password, {bool remember = false}) async {
+    if (loginId.isEmpty || password.isEmpty) return;
     setState(() => _busy = true);
     try {
       final res = await api.post('/api/auth/login',
-          {'bank_code': brand.code, 'login_id': _id.text.trim(), 'password': _password.text});
+          {'bank_code': brand.code, 'login_id': loginId, 'password': password});
       await api.setToken(res['token']);
+      if (remember) {
+        await savedLogins.save(SavedLogin(loginId, password, res['customer']['full_name']));
+      }
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
           context, MaterialPageRoute(builder: (_) => const HomeScreen()), (_) => false);
@@ -36,6 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _forget(SavedLogin login) async {
+    await savedLogins.remove(login.loginId);
+    setState(() => _saved = savedLogins.all());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,7 +60,34 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           Center(child: BankLogo(brand, size: 80)),
-          const SizedBox(height: 32),
+          if (_saved.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Saved logins on this phone', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            for (final s in _saved)
+              Card(
+                child: ListTile(
+                  leading: CircleAvatar(child: Text(s.name[0])),
+                  title: Text(s.name),
+                  subtitle: Text(s.loginId),
+                  onTap: _busy ? null : () => _login(s.loginId, s.password),
+                  trailing: IconButton(
+                    tooltip: 'Forget this login',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => _forget(s),
+                  ),
+                ),
+              ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Row(children: [
+                Expanded(child: Divider()),
+                Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('or log in as someone else')),
+                Expanded(child: Divider()),
+              ]),
+            ),
+          ] else
+            const SizedBox(height: 32),
           TextField(
             controller: _id,
             decoration: const InputDecoration(
@@ -54,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
           TextField(
             controller: _password,
             obscureText: _hide,
-            onSubmitted: (_) => _login(),
+            onSubmitted: (_) => _login(_id.text.trim(), _password.text, remember: _remember),
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: const Icon(Icons.lock),
@@ -63,10 +106,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () => setState(() => _hide = !_hide)),
             ),
           ),
-          const SizedBox(height: 24),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            value: _remember,
+            onChanged: (v) => setState(() => _remember = v!),
+            title: const Text('Remember me on this phone'),
+            subtitle: const Text('Demo only – saves the password for one-tap login'),
+          ),
+          const SizedBox(height: 8),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
-            onPressed: _busy ? null : _login,
+            onPressed: _busy ? null : () => _login(_id.text.trim(), _password.text, remember: _remember),
             child: _busy
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text('Login', style: TextStyle(fontSize: 16)),

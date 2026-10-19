@@ -7,3 +7,4 @@ final brand = BankBrand.current();
 final api = RakshakApi('bank.${brand.flavor}');
 final location = LocationService(api);
 final live = LiveUpdates(api);
+final savedLogins = SavedLogins(api);
