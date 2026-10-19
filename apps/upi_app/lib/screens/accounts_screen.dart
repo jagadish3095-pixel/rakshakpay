@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../models.dart';
 import '../services.dart';
 import 'link_bank_screen.dart';
 

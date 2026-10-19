@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:upi_app/screens/lock_screen.dart';
-import 'package:upi_app/upi_uri.dart';
+import 'package:rakshak_core/rakshak_core.dart';
 
 void main() {
   testWidgets('lock screen blocks the back button and shows a keypad', (tester) async {

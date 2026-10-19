@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../models.dart';
 import '../services.dart';
 import 'home_screen.dart' show PaymentTile;
 

@@ -1,7 +1,5 @@
 import 'package:rakshak_core/rakshak_core.dart';
 
-import 'models.dart';
-
 /// App-wide objects, created once.
 final api = RakshakApi('upi');
 final location = LocationService(api);

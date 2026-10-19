@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
 import '../services.dart';
-import '../theme.dart';
 import 'home_screen.dart';
 import 'welcome_screen.dart';
 

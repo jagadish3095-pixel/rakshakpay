@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../models.dart';
-import '../upi_uri.dart';
 import 'pay_screen.dart';
 
 /// Camera QR scanner. Any standard UPI QR (upi://pay?...) works.

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../models.dart';
 import '../services.dart';
-import '../theme.dart';
 
 /// Pay a UPI ID or mobile number. Opened directly, or from a scanned QR code.
 class PayScreen extends StatefulWidget {

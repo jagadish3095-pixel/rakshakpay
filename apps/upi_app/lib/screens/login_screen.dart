@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
 import '../services.dart';
-import '../theme.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {

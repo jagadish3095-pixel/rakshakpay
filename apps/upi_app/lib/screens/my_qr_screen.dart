@@ -3,9 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../models.dart';
-import '../theme.dart';
-import '../upi_uri.dart';
 
 /// Shows your UPI QR code so others can scan and pay you.
 class MyQrScreen extends StatefulWidget {

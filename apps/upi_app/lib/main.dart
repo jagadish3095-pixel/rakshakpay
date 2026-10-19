@@ -4,7 +4,6 @@ import 'package:rakshak_core/rakshak_core.dart';
 import 'screens/lock_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services.dart';
-import 'theme.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 

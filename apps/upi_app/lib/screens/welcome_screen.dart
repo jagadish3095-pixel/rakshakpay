@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
 import '../services.dart';
-import '../theme.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
