@@ -1,14 +1,16 @@
 """Creates a few test customers through the API (server must be running).
 
-    backend/.venv/Scripts/python tools/create_test_accounts.py
+    backend/.venv/Scripts/python tools/create_test_accounts.py                      # laptop server
+    backend/.venv/Scripts/python tools/create_test_accounts.py https://rakshakpay.onrender.com
 
 All test logins use password 'secret123', MPIN '1234', ATM PIN '4321'.
 """
 import json
+import sys
 import urllib.error
 import urllib.request
 
-SERVER = "http://localhost:8000"
+SERVER = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000").rstrip("/")
 
 PEOPLE = [
     # bank, branch index, name, PAN, mobile, opening deposit (₹), type, business
