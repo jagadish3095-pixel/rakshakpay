@@ -29,6 +29,9 @@ def test_open_login_transfer_passbook_and_atm(client):
     assert open_account(client, "SAHY", "Priya Sharma", "ABCPS1234K", "9000000001").status_code == 409
 
     priya = login(client, "SAHY", a["cif"])
+    # app lock uses the MPIN
+    assert client.post("/api/unlock", headers=priya, json={"mpin": "0000"}).status_code == 401
+    assert client.post("/api/unlock", headers=priya, json={"mpin": "1234"}).status_code == 200
     me = client.get("/api/me", headers=priya).json()
     assert me["full_name"] == "Priya Sharma"
     assert me["accounts"][0]["balance"] == 1_00_000_00

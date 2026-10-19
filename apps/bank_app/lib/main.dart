@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:rakshak_core/rakshak_core.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/lock_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,12 +13,37 @@ Future<void> main() async {
   runApp(const BankApp());
 }
 
-class BankApp extends StatelessWidget {
+class BankApp extends StatefulWidget {
   const BankApp({super.key});
+
+  @override
+  State<BankApp> createState() => _BankAppState();
+}
+
+class _BankAppState extends State<BankApp> {
+  late final AutoLock _autoLock;
+
+  @override
+  void initState() {
+    super.initState();
+    // Locks again after 30 seconds in the background, like real banking apps.
+    _autoLock = AutoLock(
+      navigatorKey: navigatorKey,
+      isLoggedIn: () => api.token != null,
+      lockScreen: () => const LockScreen(onLaunch: false),
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoLock.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: brand.name,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -23,8 +51,8 @@ class BankApp extends StatelessWidget {
         appBarTheme: AppBarTheme(backgroundColor: brand.color, foregroundColor: Colors.white),
         inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
       ),
-      // Stay logged in between app launches.
-      home: api.token == null ? const WelcomeScreen() : const HomeScreen(),
+      // Logged in before? Ask for the MPIN before showing anything.
+      home: api.token == null ? const WelcomeScreen() : const LockScreen(onLaunch: true),
     );
   }
 }

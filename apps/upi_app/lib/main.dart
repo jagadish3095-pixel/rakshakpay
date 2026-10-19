@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakshak_core/rakshak_core.dart';
 
 import 'screens/lock_screen.dart';
 import 'screens/welcome_screen.dart';
@@ -20,44 +21,24 @@ class UpiApp extends StatefulWidget {
   State<UpiApp> createState() => _UpiAppState();
 }
 
-class _UpiAppState extends State<UpiApp> with WidgetsBindingObserver {
-  /// Lock again if the app was in the background longer than this.
-  static const _lockAfter = Duration(seconds: 30);
-  DateTime? _backgroundSince;
-  bool _lockShown = false;
+class _UpiAppState extends State<UpiApp> {
+  late final AutoLock _autoLock;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    // Locks again after 30 seconds in the background.
+    _autoLock = AutoLock(
+      navigatorKey: navigatorKey,
+      isLoggedIn: () => api.token != null,
+      lockScreen: () => const LockScreen(onLaunch: false),
+    );
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _autoLock.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _backgroundSince = DateTime.now();
-    } else if (state == AppLifecycleState.resumed) {
-      final since = _backgroundSince;
-      _backgroundSince = null;
-      if (since != null && api.token != null && !_lockShown && DateTime.now().difference(since) > _lockAfter) {
-        _showLock();
-      }
-    }
-  }
-
-  Future<void> _showLock() async {
-    _lockShown = true;
-    await navigatorKey.currentState?.push(MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => const LockScreen(onLaunch: false),
-    ));
-    _lockShown = false;
   }
 
   @override

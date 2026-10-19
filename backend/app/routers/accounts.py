@@ -202,6 +202,18 @@ def me(customer: Customer = Depends(current_customer)):
     return customer_out(customer)
 
 
+class UnlockRequest(BaseModel):
+    mpin: str
+
+
+@router.post("/unlock")
+def unlock(req: UnlockRequest, customer: Customer = Depends(current_customer)):
+    """App lock: the bank app asks for the MPIN each time it is opened."""
+    if not any(verify_secret(req.mpin, a.mpin_hash) for a in customer.accounts):
+        raise HTTPException(401, "Wrong MPIN")
+    return {"message": "Unlocked"}
+
+
 def own_account(db: Session, customer: Customer, account_no: str) -> Account:
     account = db.get(Account, account_no)
     if not account or account.customer_id != customer.id:
