@@ -10,19 +10,20 @@ fake money and connected through one backend ("the banking network").
 
 ```
 RakshakPay/
-â”œâ”€ backend/                 Python FastAPI server = bank core systems + NPCI switch (+ fraud engine later)
-â”‚  â”œâ”€ app/main.py           starts the server, live-update WebSocket
-â”‚  â”œâ”€ app/models.py         database tables (banks, branches, ATMs, customers, accounts, transactions, passbook)
-â”‚  â”œâ”€ app/ledger.py         the ONLY place money moves
-â”‚  â”œâ”€ app/seed_data.py      the 5 banks, 30 branches, 20 ATMs, 23 cities
-â”‚  â”œâ”€ app/routers/          APIs: meta, accounts (KYC/login/passbook), payments (transfer/ATM), demo
-â”‚  â””â”€ tests/                end-to-end tests (python -m pytest)
-â”œâ”€ packages/rakshak_core/   Dart code shared by all Flutter apps (API client, models, GPS, live updates)
-â”œâ”€ apps/bank_app/           Flutter bank app â†’ 5 apps via flavors (Sahyadri, Ganga, Kaveri, Narmada, Godavari)
-â”œâ”€ tools/                   icon generator, test-account creator
-â”œâ”€ docs/PLAN.md             system rules, demo story, build phases
-â”œâ”€ run_backend.ps1          start the server
-â””â”€ build_bank_apks.ps1      build all 5 bank APKs into dist/
+├─ backend/                 Python FastAPI server = bank core systems + NPCI switch (+ fraud engine later)
+│  ├─ app/main.py           starts the server, live-update WebSocket
+│  ├─ app/models.py         database tables (banks, branches, ATMs, customers, accounts, transactions, passbook)
+│  ├─ app/ledger.py         the ONLY place money moves
+│  ├─ app/seed_data.py      the 5 banks, 30 branches, 20 ATMs, 23 cities
+│  ├─ app/routers/          APIs: meta, accounts (KYC/login/passbook), payments (transfer/ATM), demo
+│  └─ tests/                end-to-end tests (python -m pytest)
+├─ packages/rakshak_core/   Dart code shared by all Flutter apps (API client, models, GPS, live updates)
+├─ apps/upi_app/            Flutter RakshakPay UPI app (works with all 5 banks)
+├─ apps/bank_app/           Flutter bank app → 5 apps via flavors (Sahyadri, Ganga, Kaveri, Narmada, Godavari)
+├─ tools/                   icon generator, test-account creator
+├─ docs/PLAN.md             system rules, demo story, build phases
+├─ run_backend.ps1          start the server
+└─ build_bank_apks.ps1      build all 5 bank APKs into dist/
 ```
 
 ## Cloud server (main setup)
@@ -31,7 +32,7 @@ The backend runs on **Render** (free) at **https://rakshakpay.onrender.com**, wi
 **Neon** PostgreSQL database. Phones connect over any internet connection; no laptop needed.
 
 - Code pushed to GitHub `main` deploys automatically (settings in `render.yaml`).
-- `DATABASE_URL` (Neon connection string) and `ADMIN_KEY` are set in Render â†’ Environment. Never commit them.
+- `DATABASE_URL` (Neon connection string) and `ADMIN_KEY` are set in Render → Environment. Never commit them.
 - The free server sleeps after ~15 minutes without use; the first request then takes up to a minute.
 - Build apps for the cloud:
   `flutter build apk --flavor kaveri --dart-define=SERVER=https://rakshakpay.onrender.com`
@@ -75,14 +76,14 @@ flutter run --flavor kaveri
 Use `sahyadri`, `ganga`, `kaveri`, `narmada` or `godavari`. Each is a separate app, so all five can be
 installed on the same phone.
 
-**Connecting a phone:** phone and laptop on the same Wi-Fi (or the phone's hotspot) â†’ in the app tap
-âš™ **Settings** â†’ enter `http://<laptop IP>:8000` â†’ **Save & test**. The Android emulator uses
+**Connecting a phone:** phone and laptop on the same Wi-Fi (or the phone's hotspot) → in the app tap
+⚙ **Settings** → enter `http://<laptop IP>:8000` → **Save & test**. The Android emulator uses
 `http://10.0.2.2:8000` (the default).
 
 **Demo location:** in Settings you can pretend the phone is in another city, so the police map shows
 transactions spread across India even though all phones are in one room.
 
-Build all five APKs to share by USB or WhatsApp: double-click `build_bank_apks.cmd` â†’ `dist\`.
+Build all five APKs to share by USB or WhatsApp: double-click `build_bank_apks.cmd` → `dist\`.
 
 ## Test data
 
@@ -106,11 +107,11 @@ cd apps\bank_app;  flutter analyze;  flutter test
 
 ## Progress
 
-- [x] Phase 0 â€“ project setup, Git
-- [x] Phase 1 â€“ 5 bank apps: account opening + KYC, login, transfers (IMPS/NEFT), live passbook + PDF, ATM withdrawal with location, debit card
-- [ ] Phase 2 â€“ RakshakPay UPI app
-- [ ] Phase 3 â€“ merchant app (QR + voice), crypto exchange app
-- [ ] Phase 4 â€“ fraud engine (complaint, auto-trace, hold, mule list, PAN block, recovery lien, court, refund)
-- [ ] Phase 5 â€“ Cyber Police app with GPS map and money-flow animation
-- [ ] Phase 6 â€“ bank officer mode (mule verification / delisting)
-- [ ] Phase 7 â€“ demo polish
+- [x] Phase 0 – project setup, Git
+- [x] Phase 1 – 5 bank apps: account opening + KYC, login, transfers (IMPS/NEFT), live passbook + PDF, ATM withdrawal with location, debit card
+- [x] Phase 2 – RakshakPay UPI app (`apps/upi_app`): register, link bank (card check + UPI PIN), UPI IDs, pay by UPI ID / mobile / QR, my QR, balance, history
+- [ ] Phase 3 – merchant app (QR + voice), crypto exchange app
+- [ ] Phase 4 – fraud engine (complaint, auto-trace, hold, mule list, PAN block, recovery lien, court, refund)
+- [ ] Phase 5 – Cyber Police app with GPS map and money-flow animation
+- [ ] Phase 6 – bank officer mode (mule verification / delisting)
+- [ ] Phase 7 – demo polish
