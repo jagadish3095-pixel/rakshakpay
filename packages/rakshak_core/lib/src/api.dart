@@ -72,10 +72,11 @@ class RakshakApi {
   Future<dynamic> _send(Future<http.Response> Function() call) async {
     http.Response res;
     try {
-      res = await call().timeout(const Duration(seconds: 15));
+      // The free cloud server sleeps when unused and needs up to a minute to wake up.
+      res = await call().timeout(const Duration(seconds: 75));
     } catch (_) {
       throw ApiException('Cannot reach the RakshakPay server at $baseUrl. '
-          'Check Wi-Fi and the server address in Settings.');
+          'Check your internet connection and the server address in Settings.');
     }
     final body = res.body.isEmpty ? null : jsonDecode(utf8.decode(res.bodyBytes));
     if (res.statusCode >= 200 && res.statusCode < 300) return body;

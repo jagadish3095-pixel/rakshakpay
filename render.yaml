@@ -1,0 +1,20 @@
+# Render "Blueprint": tells render.com how to run the RakshakPay server.
+# Render reads this file from the GitHub repository when you create the service.
+services:
+  - type: web
+    name: rakshakpay
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      # Paste the Neon connection string here when Render asks for it.
+      - key: DATABASE_URL
+        sync: false
+      # Random secret needed to reset the demo data (see Render > Environment).
+      - key: ADMIN_KEY
+        generateValue: true

@@ -23,17 +23,17 @@ MAX_OPENING_DEPOSIT = 10_00_000 * 100  # ₹10 lakh, in paise
 class OpenAccountRequest(BaseModel):
     full_name: str = Field(min_length=3, max_length=100)
     dob: date
-    gender: str
+    gender: str = Field(max_length=10)
     mobile: str
-    email: str = ""
+    email: str = Field(default="", max_length=120)
     pan: str
     aadhaar: str
     address: str = Field(min_length=5, max_length=200)
-    city: str = Field(min_length=2)
-    state: str = Field(min_length=2)
+    city: str = Field(min_length=2, max_length=60)
+    state: str = Field(min_length=2, max_length=60)
     pincode: str
     account_type: str = "SAVINGS"  # SAVINGS | CURRENT
-    business_name: str = ""
+    business_name: str = Field(default="", max_length=100)
     branch_id: int
     password: str = Field(min_length=6)
     mpin: str

@@ -113,6 +113,17 @@ def test_open_login_transfer_passbook_and_atm(client):
     assert client.post("/api/atm/withdraw", json={**bad, "card_pin": "9999"}).status_code == 401
 
 
+def test_demo_deposit_only_into_own_account(client):
+    a = open_account(client, "SAHY", "Priya Sharma", "ABCPS1234K", "9876543210").json()
+    b = open_account(client, "GANG", "Ravi Kumar", "ABCPK5678L", "9123456780").json()
+    deposit = {"account_no": a["account_no"], "amount": 1_000_00}
+    assert client.post("/api/demo/cash-deposit", json=deposit).status_code == 401
+    ravi = login(client, "GANG", b["cif"])
+    assert client.post("/api/demo/cash-deposit", json=deposit, headers=ravi).status_code == 404
+    priya = login(client, "SAHY", a["cif"])
+    assert client.post("/api/demo/cash-deposit", json=deposit, headers=priya).json()["balance"] == 1_000_00
+
+
 def test_live_update_reaches_receiver(client):
     a = open_account(client, "SAHY", "Priya Sharma", "ABCPS1234K", "9876543210", deposit=5_000_00).json()
     b = open_account(client, "NARM", "Kumar Stores", "ABCPK5678L", "9123456780",

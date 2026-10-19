@@ -25,7 +25,8 @@ class LocationIn(BaseModel):
     source: str = "GPS"  # GPS | DEMO
 
     def to_location(self) -> Location:
-        return Location(self.lat, self.lng, self.label, self.source if self.lat is not None else "")
+        # Trim to the database column sizes (PostgreSQL rejects longer text).
+        return Location(self.lat, self.lng, self.label[:120], self.source[:10] if self.lat is not None else "")
 
 
 def ensure_can_debit(account: Account) -> None:
