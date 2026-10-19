@@ -109,6 +109,18 @@ def me(user: UpiUser = Depends(current_upi_user)):
     return _user_out(user)
 
 
+class UnlockRequest(BaseModel):
+    passcode: str
+
+
+@router.post("/unlock")
+def unlock(req: UnlockRequest, user: UpiUser = Depends(current_upi_user)):
+    """Checks the app passcode each time the app is opened (app lock)."""
+    if not verify_secret(req.passcode, user.passcode_hash):
+        raise HTTPException(401, "Wrong passcode")
+    return {"message": "Unlocked"}
+
+
 # ---------------------------------------------------------------- linking a bank account
 
 

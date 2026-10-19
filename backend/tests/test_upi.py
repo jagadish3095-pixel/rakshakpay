@@ -32,6 +32,11 @@ def test_full_upi_flow(client):
                                                   "passcode": "1111"}).status_code == 409
     assert client.post("/api/upi/login", json={"mobile": "9988776655", "passcode": "0000"}).status_code == 401
 
+    # app lock checks the passcode with the server
+    assert client.post("/api/upi/unlock", headers=s, json={"passcode": "0000"}).status_code == 401
+    assert client.post("/api/upi/unlock", headers=s, json={"passcode": "1111"}).status_code == 200
+    assert client.post("/api/upi/unlock", json={"passcode": "1111"}).status_code == 401  # not logged in
+
     # the bank finds the account by mobile number
     found = client.get("/api/upi/banks/KAVR/accounts", headers=s).json()["accounts"]
     assert [a["account_no"] for a in found] == [sunil["account_no"]]

@@ -1,7 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:upi_app/screens/lock_screen.dart';
 import 'package:upi_app/upi_uri.dart';
 
 void main() {
+  testWidgets('lock screen blocks the back button and shows a keypad', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LockScreen(onLaunch: true)));
+    expect(find.text('Enter your 4-digit passcode'), findsOneWidget);
+    for (final d in ['1', '2', '3', '5', '0']) {
+      expect(find.text(d), findsOneWidget);
+    }
+    final popScope = tester.widget<PopScope>(find.byType(PopScope));
+    expect(popScope.canPop, isFalse);
+  });
+
   test('QR link round-trips UPI ID, name and amount', () {
     final uri = buildUpiUri(vpa: 'lakshmimobiles@narmada', name: 'Lakshmi Mobiles', amountPaise: 1500000);
     expect(uri, startsWith('upi://pay?'));
