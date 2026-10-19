@@ -1,0 +1,41 @@
+"""Draws the RakshakPay UPI app launcher icon (indigo shield with a saffron rupee).
+
+Run once (needs Pillow):  backend/.venv/Scripts/python tools/make_upi_icon.py
+"""
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = Path(__file__).resolve().parent.parent
+RES = ROOT / "apps" / "upi_app" / "android" / "app" / "src" / "main" / "res"
+SIZES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+INDIGO, SAFFRON = "#3B2A8C", "#FF8F1F"
+
+
+def font(px):
+    for name in ("arialbd.ttf", "seguisb.ttf", "DejaVuSans-Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, px)
+        except OSError:
+            continue
+    return ImageFont.load_default(px)
+
+
+def draw(size):
+    big = size * 4
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((0, 0, big - 1, big - 1), radius=big // 5, fill=INDIGO)
+    w = big
+    # shield outline: flat top, curved sides to a point at the bottom
+    shield = [(w * .22, w * .2), (w * .5, w * .12), (w * .78, w * .2), (w * .76, w * .52),
+              (w * .66, w * .72), (w * .5, w * .86), (w * .34, w * .72), (w * .24, w * .52)]
+    d.polygon(shield, fill="white")
+    d.text((w / 2, w * .47), "₹", fill=SAFFRON, font=font(int(w * .42)), anchor="mm")
+    return img.resize((size, size), Image.LANCZOS)
+
+
+for density, px in SIZES.items():
+    out = RES / f"mipmap-{density}" / "ic_launcher.png"
+    draw(px).save(out)
+print("RakshakPay icon written")
