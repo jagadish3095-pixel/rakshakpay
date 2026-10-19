@@ -5,6 +5,7 @@ services:
     name: rakshakpay
     runtime: python
     plan: free
+    region: singapore  # same region as the Neon database = faster
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
