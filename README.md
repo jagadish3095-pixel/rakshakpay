@@ -35,10 +35,14 @@ cd C:\dev\RakshakPay\backend
 
 ## Run the backend
 
+Double-click **`run_backend.cmd`**, or in a terminal:
+
 ```powershell
 cd C:\dev\RakshakPay
-.\run_backend.ps1
+.\run_backend.cmd
 ```
+
+(Windows blocks `.ps1` scripts by default; the `.cmd` file runs it without changing that setting.)
 
 It prints the laptop's IP addresses. Open **http://localhost:8000/docs** to try every API in the browser.
 The first time, Windows Firewall asks to allow Python on the network: allow it on **private** networks
@@ -63,7 +67,7 @@ installed on the same phone.
 **Demo location:** in Settings you can pretend the phone is in another city, so the police map shows
 transactions spread across India even though all phones are in one room.
 
-Build all five APKs to share by USB or WhatsApp: `.\build_bank_apks.ps1` → `dist\`.
+Build all five APKs to share by USB or WhatsApp: double-click `build_bank_apks.cmd` → `dist\`.
 
 ## Test data
 
