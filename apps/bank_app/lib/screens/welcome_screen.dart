@@ -6,8 +6,36 @@ import '../services.dart';
 import 'login_screen.dart';
 import 'open_account_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  bool? _connected; // null = still checking
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    setState(() => _connected = null);
+    try {
+      await api.get('/');
+      if (mounted) setState(() => _connected = true);
+    } catch (_) {
+      if (mounted) setState(() => _connected = false);
+    }
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location)));
+    _check();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +57,21 @@ class WelcomeScreen extends StatelessWidget {
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
+                    tooltip: 'Settings (server address)',
                     icon: const Icon(Icons.settings, color: Colors.white70),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => SettingsScreen(api: api, location: location))),
+                    onPressed: _openSettings,
                   ),
                 ),
+                if (_connected == false)
+                  Card(
+                    color: Colors.orange.shade50,
+                    child: ListTile(
+                      leading: const Icon(Icons.wifi_off, color: Colors.deepOrange),
+                      title: const Text('Not connected to the RakshakPay server'),
+                      subtitle: Text('Tap here and enter the laptop address.\nNow: ${api.baseUrl}'),
+                      onTap: _openSettings,
+                    ),
+                  ),
                 const Spacer(),
                 Center(child: BankLogo(brand, size: 110)),
                 const SizedBox(height: 20),

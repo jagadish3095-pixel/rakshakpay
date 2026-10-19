@@ -36,19 +36,27 @@ class LiveUpdates {
 
   void _connect() {
     if (!_running) return;
+    final WebSocketChannel channel;
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(api.wsUrl));
+      channel = WebSocketChannel.connect(Uri.parse(api.wsUrl));
     } catch (_) {
       _scheduleRetry();
       return;
     }
+    _channel = channel;
+    // A failed connection is reported through `ready`; handle it so it is not an uncaught error.
+    channel.ready.then((_) {}, onError: (_) {});
     _ping = Timer.periodic(const Duration(seconds: 20), (_) => _channel?.sink.add('ping'));
-    _channel!.stream.listen(
+    channel.stream.listen(
       (message) {
         final data = jsonDecode(message as String) as Map<String, dynamic>;
         if (data['type'] == 'account_changed') _changes.add(data['account_no'] as String);
       },
-      onDone: _scheduleRetry,
+      onDone: () {
+        // 4401 = the server no longer accepts this login; retrying would never succeed.
+        if (channel.closeCode == 4401) return stop();
+        _scheduleRetry();
+      },
       onError: (_) => _scheduleRetry(),
       cancelOnError: true,
     );

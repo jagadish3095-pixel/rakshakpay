@@ -48,10 +48,11 @@ async def live_updates(ws: WebSocket, token: str = ""):
         session = db.get(LoginSession, token)
         account_nos = [a.account_no for a in
                        db.query(Account).filter_by(customer_id=session.customer_id)] if session else []
+    await ws.accept()
     if not session:
+        # Accept first so the app receives the 4401 code and stops retrying.
         await ws.close(code=4401)
         return
-    await ws.accept()
     manager.watch(ws, account_nos)
     try:
         while True:

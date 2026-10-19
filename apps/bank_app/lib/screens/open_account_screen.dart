@@ -60,10 +60,12 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
     _load();
   }
 
+  /// Cities and branches come from the server. Called again if the first try failed.
   Future<void> _load() async {
     try {
       final bank = await api.get('/api/banks/${brand.code}');
       final cities = await location.cities();
+      if (!mounted) return;
       setState(() {
         _branches = [for (final b in bank['branches']) Branch.fromJson(b)];
         _cities = cities;
@@ -72,6 +74,33 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
       if (mounted) showError(context, e);
     }
   }
+
+  bool get _loaded => _cities.isNotEmpty && _branches.isNotEmpty;
+
+  /// Shown instead of an empty dropdown when the server could not be reached.
+  Widget _notLoaded(String what) => Card(
+        color: Colors.orange.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Could not load the $what list from the RakshakPay server.'),
+            const SizedBox(height: 4),
+            Text('Server: ${api.baseUrl}', style: const TextStyle(fontSize: 12)),
+            Row(children: [
+              TextButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+              TextButton.icon(
+                icon: const Icon(Icons.settings),
+                label: const Text('Settings'),
+                onPressed: () async {
+                  await Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location)));
+                  _load();
+                },
+              ),
+            ]),
+          ]),
+        ),
+      );
 
   // ---------- validators ----------
   String? _pinValidator(String? v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : 'Enter 4 digits';
@@ -110,6 +139,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
     if (_step == 0 && !_mobileVerified) return showError(context, 'Verify your mobile number with OTP');
     if (_step == 1 && !_consent) return showError(context, 'Please give Aadhaar e-KYC consent');
     if (_step < 4) {
+      if (!_loaded) _load();
       setState(() => _step++);
     } else {
       _submit();
@@ -302,6 +332,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             validator: (v) => (v?.trim().length ?? 0) < 5 ? 'Enter full address' : null,
           ),
           _gap(),
+          if (_cities.isEmpty) _notLoaded('city'),
           DropdownButtonFormField<City>(
             initialValue: _city,
             isExpanded: true,
@@ -342,6 +373,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             ),
           ],
           _gap(),
+          if (_branches.isEmpty) _notLoaded('branch'),
           DropdownButtonFormField<Branch>(
             initialValue: _branch,
             isExpanded: true,
