@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "C:\\dev\\RakshakPay\\backend\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--app-dir", "C:\\dev\\RakshakPay\\backend", "--host", "0.0.0.0", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "bank-web",
+      "runtimeExecutable": "C:\\dev\\RakshakPay\\backend\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "C:\\dev\\RakshakPay\\apps\\bank_app\\build\\web"],
+      "port": 8080
+    }
+  ]
+}

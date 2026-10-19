@@ -1,0 +1,30 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Demo database (recreated automatically)
+backend/*.db
+
+# Flutter / Dart
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/android/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/*.iml
+**/.idea/
+pubspec_overrides.yaml
+
+# Built APKs collected by the build script
+dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
