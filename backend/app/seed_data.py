@@ -79,7 +79,10 @@ def seed(db: Session) -> None:
     for code, name, ifsc_prefix, acc_prefix, card_bin, color, tagline in BANKS:
         db.add(Bank(code=code, name=name, ifsc_prefix=ifsc_prefix, account_prefix=acc_prefix,
                     card_bin=card_bin, color=color, tagline=tagline))
+    # Banks must exist before branches/ATMs that point to them (PostgreSQL checks this).
+    db.flush()
 
+    for code, name, ifsc_prefix, *_ in BANKS:
         for i, (branch_name, city) in enumerate(BRANCHES[code], start=1):
             state, lat, lng = CITIES[city]
             db.add(Branch(bank_code=code, name=f"{branch_name}, {city}", city=city, state=state,

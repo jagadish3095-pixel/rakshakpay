@@ -7,7 +7,7 @@ survives server restarts.
 import os
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -28,6 +28,12 @@ DATABASE_URL = _database_url()
 if DATABASE_URL.startswith("sqlite"):
     # FastAPI may use the connection from different threads.
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+    @event.listens_for(engine, "connect")
+    def _enforce_foreign_keys(dbapi_conn, _record):
+        # SQLite ignores foreign keys unless asked; turn them on so the laptop
+        # behaves like the cloud PostgreSQL database and tests catch mistakes.
+        dbapi_conn.execute("PRAGMA foreign_keys=ON")
 else:
     # Cloud databases drop idle connections; check each one before use.
     engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
