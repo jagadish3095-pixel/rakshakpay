@@ -10,10 +10,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Base, SessionLocal, engine
-from .models import Account
+from .models import Account, UpiSession, Vpa
 from .models import Session as LoginSession
 from .realtime import manager
-from .routers import accounts, demo, meta, payments
+from .routers import accounts, demo, meta, payments, upi
 from .seed_data import seed
 
 
@@ -33,6 +33,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(meta.router)
 app.include_router(accounts.router)
 app.include_router(payments.router)
+app.include_router(upi.router)
 app.include_router(demo.router)
 
 
@@ -41,15 +42,22 @@ def health():
     return {"service": "RakshakPay Banking Network", "status": "running"}
 
 
+def _watched_accounts(token: str) -> list[str] | None:
+    """Accounts a bank-app or UPI-app login may watch; None if the token is not valid."""
+    with SessionLocal() as db:
+        if bank := db.get(LoginSession, token):
+            return [a.account_no for a in db.query(Account).filter_by(customer_id=bank.customer_id)]
+        if upi := db.get(UpiSession, token):
+            return [v.account_no for v in db.query(Vpa).filter_by(upi_user_id=upi.upi_user_id)]
+    return None
+
+
 @app.websocket("/ws")
 async def live_updates(ws: WebSocket, token: str = ""):
     """Apps connect here to hear about changes to their accounts."""
-    with SessionLocal() as db:
-        session = db.get(LoginSession, token)
-        account_nos = [a.account_no for a in
-                       db.query(Account).filter_by(customer_id=session.customer_id)] if session else []
+    account_nos = _watched_accounts(token)
     await ws.accept()
-    if not session:
+    if account_nos is None:
         # Accept first so the app receives the 4401 code and stops retrying.
         await ws.close(code=4401)
         return

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
-import '../brand.dart';
 import '../services.dart';
 import 'login_screen.dart';
 import 'open_account_screen.dart';

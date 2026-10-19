@@ -1,4 +1,4 @@
-﻿# RakshakPay
+# RakshakPay
 
 A working demo of a **proactive cyber-fraud response system** for India: five fake banks,
 a UPI payment app, a merchant app, a crypto exchange and a Cyber Police app, all running on

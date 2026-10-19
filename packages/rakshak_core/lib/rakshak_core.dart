@@ -2,6 +2,7 @@
 library;
 
 export 'src/api.dart';
+export 'src/banks.dart';
 export 'src/live.dart';
 export 'src/location.dart';
 export 'src/models.dart';

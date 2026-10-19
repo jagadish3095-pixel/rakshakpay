@@ -31,8 +31,7 @@ class _CardScreenState extends State<CardScreen> {
     final number = _showNumber
         ? '${n.substring(0, 4)}  ${n.substring(4, 8)}  ${n.substring(8, 12)}  ${n.substring(12)}'
         : 'XXXX  XXXX  XXXX  ${n.substring(12)}';
-    final opened = DateTime.parse(widget.account.openedOn);
-    final validThru = '${opened.month.toString().padLeft(2, '0')}/${(opened.year + 5) % 100}';
+    final validThru = widget.account.cardExpiry; // needed to set a UPI PIN
 
     return Scaffold(
       appBar: AppBar(title: const Text('Debit card')),

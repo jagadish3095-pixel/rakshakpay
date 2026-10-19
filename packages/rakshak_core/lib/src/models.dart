@@ -55,10 +55,11 @@ class Account {
         availableBalance = j['available_balance'],
         status = j['status'],
         cardNo = j['card_no'],
+        cardExpiry = j['card_expiry'] ?? '',
         cardBlocked = j['card_blocked'],
         openedOn = j['opened_on'];
 
-  final String accountNo, bankCode, accountType, businessName, holderName, status, cardNo, openedOn;
+  final String accountNo, bankCode, accountType, businessName, holderName, status, cardNo, cardExpiry, openedOn;
   final Branch branch;
   final int balance, lienAmount, availableBalance;
   final bool cardBlocked;

@@ -42,6 +42,7 @@ def account_out(a: Account) -> dict:
         "available_balance": a.available_balance,
         "status": a.status,
         "card_no": a.card_no,
+        "card_expiry": a.card_expiry,
         "card_blocked": a.card_blocked,
         "opened_on": a.created_at.isoformat(),
     }

@@ -10,7 +10,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session as DbSession
 
 from .db import get_db
-from .models import Customer, Session
+from .models import Customer, Session, UpiSession, UpiUser
 
 _ITERATIONS = 100_000
 
@@ -41,3 +41,15 @@ def current_customer(
     if not session:
         raise HTTPException(401, "Please log in again")
     return db.get(Customer, session.customer_id)
+
+
+def current_upi_user(
+    authorization: str = Header(default=""),
+    db: DbSession = Depends(get_db),
+) -> UpiUser:
+    """FastAPI dependency: the logged-in UPI app user."""
+    token = authorization.removeprefix("Bearer ").strip()
+    session = db.get(UpiSession, token) if token else None
+    if not session:
+        raise HTTPException(401, "Please log in again")
+    return db.get(UpiUser, session.upi_user_id)

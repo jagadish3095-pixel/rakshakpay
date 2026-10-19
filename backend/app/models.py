@@ -108,6 +108,11 @@ class Account(Base):
         """Money the holder can actually use (can be negative under a recovery lien)."""
         return self.balance - self.lien_amount
 
+    @property
+    def card_expiry(self) -> str:
+        """Debit card 'valid thru' (MM/YY): 5 years after the account was opened."""
+        return f"{self.created_at.month:02d}/{(self.created_at.year + 5) % 100:02d}"
+
 
 class Transaction(Base):
     """One money movement. ATM withdrawals and cash deposits have only one side."""
@@ -116,7 +121,7 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     utr: Mapped[str] = mapped_column(String(16), unique=True, index=True)
-    channel: Mapped[str] = mapped_column(String(10))  # IMPS | NEFT | INTERNAL | ATM | CASH
+    channel: Mapped[str] = mapped_column(String(10))  # IMPS | NEFT | INTERNAL | UPI | ATM | CASH
     amount: Mapped[int] = mapped_column(Integer)  # paise
     debit_account: Mapped[str | None] = mapped_column(ForeignKey("accounts.account_no"), nullable=True)
     credit_account: Mapped[str | None] = mapped_column(ForeignKey("accounts.account_no"), nullable=True)
@@ -166,3 +171,56 @@ class PanBlacklist(Base):
     pan: Mapped[str] = mapped_column(String(10), primary_key=True)
     reason: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+# ---------------------------------------------------------------- UPI (the "NPCI" side)
+
+
+class UpiUser(Base):
+    """A person registered in the RakshakPay UPI app (identified by mobile, like real UPI)."""
+
+    __tablename__ = "upi_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mobile: Mapped[str] = mapped_column(String(10), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    passcode_hash: Mapped[str] = mapped_column(String(200))  # 4-digit app passcode
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+    # First linked UPI ID first: payments to this person's mobile number go to it.
+    vpas: Mapped[list["Vpa"]] = relationship(back_populates="user", order_by="Vpa.created_at")
+
+
+class Vpa(Base):
+    """A UPI ID (e.g. sunil6655@kaveri) linked to one bank account."""
+
+    __tablename__ = "vpas"
+
+    address: Mapped[str] = mapped_column(String(60), primary_key=True)
+    upi_user_id: Mapped[int] = mapped_column(ForeignKey("upi_users.id"))
+    account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"), unique=True)
+    upi_pin_hash: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+    user: Mapped[UpiUser] = relationship(back_populates="vpas")
+    account: Mapped[Account] = relationship()
+
+
+class UpiSession(Base):
+    __tablename__ = "upi_sessions"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    upi_user_id: Mapped[int] = mapped_column(ForeignKey("upi_users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class UpiTransfer(Base):
+    """Extra details for a UPI transaction: which UPI IDs paid and received."""
+
+    __tablename__ = "upi_transfers"
+
+    txn_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), primary_key=True)
+    payer_vpa: Mapped[str] = mapped_column(String(60), index=True)
+    payee_vpa: Mapped[str] = mapped_column(String(60), index=True)
+
+    txn: Mapped[Transaction] = relationship()
