@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..fraud import payee_warning
 from ..ledger import Location, move_money
 from ..models import Account, Bank, Branch, Customer, LedgerEntry, PanBlacklist
 from ..models import Session as LoginSession
@@ -254,4 +255,4 @@ def lookup_beneficiary(account_no: str, ifsc: str,
     bank = db.get(Bank, account.bank_code)
     return {"account_no": account.account_no, "name": mask_name(account.customer.full_name),
             "bank": bank.name, "branch": account.branch.name, "account_type": account.account_type,
-            "business_name": account.business_name}
+            "business_name": account.business_name, "warning": payee_warning(account)}

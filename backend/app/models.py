@@ -278,3 +278,128 @@ class CryptoEntry(Base):
     txn_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"), nullable=True)
     address: Mapped[str] = mapped_column(String(100), default="")  # outside wallet for WITHDRAW_CRYPTO
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+# ---------------------------------------------------------------- Phase 4: complaints & fraud engine
+
+
+class Complaint(Base):
+    """A cyber-fraud complaint (like a 1930 / cybercrime.gov.in report)."""
+
+    __tablename__ = "complaints"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ack_no: Mapped[str] = mapped_column(String(20), unique=True)
+    victim_txn_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), unique=True)
+    victim_account: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))
+    amount: Mapped[int] = mapped_column(BigInteger)  # paise lost in the reported transaction
+    category: Mapped[str] = mapped_column(String(40))
+    description: Mapped[str] = mapped_column(Text, default="")
+    channel: Mapped[str] = mapped_column(String(20))  # BANK_APP | UPI_APP
+    status: Mapped[str] = mapped_column(String(20), default="REGISTERED")  # REGISTERED | TRACED | REFUNDED
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)  # where the victim reported from
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
+    location_label: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    traced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    victim_txn: Mapped[Transaction] = relationship()
+    nodes: Mapped[list["TrailNode"]] = relationship(back_populates="complaint", order_by="TrailNode.id")
+    edges: Mapped[list["TrailEdge"]] = relationship(back_populates="complaint", order_by="TrailEdge.id")
+
+
+class TrailNode(Base):
+    """One account in a complaint's money trail, with what happened to the victim's money there."""
+
+    __tablename__ = "trail_nodes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    complaint_id: Mapped[int] = mapped_column(ForeignKey("complaints.id"), index=True)
+    account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))
+    role: Mapped[str] = mapped_column(String(12))  # VICTIM | MULE | MERCHANT | EXCHANGE
+    level: Mapped[int] = mapped_column(Integer, default=0)  # hops from the victim
+    received: Mapped[int] = mapped_column(BigInteger, default=0)  # victim's money that came in
+    forwarded: Mapped[int] = mapped_column(BigInteger, default=0)  # sent on to other people
+    cashed_out: Mapped[int] = mapped_column(BigInteger, default=0)  # ATM withdrawals
+    spent_merchant: Mapped[int] = mapped_column(BigInteger, default=0)  # goods bought
+    to_crypto: Mapped[int] = mapped_column(BigInteger, default=0)  # deposited at the exchange
+    crypto_frozen: Mapped[int] = mapped_column(BigInteger, default=0)  # still on the exchange (frozen)
+    crypto_escaped: Mapped[int] = mapped_column(BigInteger, default=0)  # sent to outside wallets
+    held: Mapped[int] = mapped_column(BigInteger, default=0)  # lien placed right away
+    recovery_approved: Mapped[int] = mapped_column(BigInteger, default=0)  # court-approved recovery lien
+    released: Mapped[int] = mapped_column(BigInteger, default=0)  # returned to the victim from the account
+    crypto_released: Mapped[int] = mapped_column(BigInteger, default=0)  # seized from the exchange for the victim
+
+    complaint: Mapped[Complaint] = relationship(back_populates="nodes")
+    account: Mapped[Account] = relationship()
+
+
+class TrailEdge(Base):
+    """One hop of the victim's money (who sent how much to whom, when and where)."""
+
+    __tablename__ = "trail_edges"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    complaint_id: Mapped[int] = mapped_column(ForeignKey("complaints.id"), index=True)
+    txn_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"))
+    from_account: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))
+    to_account: Mapped[str | None] = mapped_column(ForeignKey("accounts.account_no"), nullable=True)
+    kind: Mapped[str] = mapped_column(String(12))  # TRANSFER | MERCHANT | ATM | CRYPTO
+    amount: Mapped[int] = mapped_column(BigInteger)  # victim's money in this hop
+    txn_amount: Mapped[int] = mapped_column(BigInteger)  # full transaction amount
+
+    complaint: Mapped[Complaint] = relationship(back_populates="edges")
+    txn: Mapped[Transaction] = relationship()
+
+
+class CourtOrder(Base):
+    """Auto-drafted application to a magistrate (BNSS s.107) to recover money that was spent,
+    withdrawn as cash or moved out as crypto. Approval adds a recovery lien on the mule's account."""
+
+    __tablename__ = "court_orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    complaint_id: Mapped[int] = mapped_column(ForeignKey("complaints.id"), index=True)
+    account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))
+    amount: Mapped[int] = mapped_column(BigInteger)
+    reason: Mapped[str] = mapped_column(String(200))
+    application_text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="PENDING")  # PENDING | APPROVED
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    approved_by: Mapped[str] = mapped_column(String(60), default="")
+
+    complaint: Mapped[Complaint] = relationship()
+    account: Mapped[Account] = relationship()
+
+
+class Notice(Base):
+    """A message shown to an account holder in the bank and UPI apps."""
+
+    __tablename__ = "notices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # MULE | HOLD | RECOVERY | REFUND
+    title: Mapped[str] = mapped_column(String(120))
+    body: Mapped[str] = mapped_column(Text)
+    complaint_id: Mapped[int | None] = mapped_column(ForeignKey("complaints.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class PoliceOfficer(Base):
+    __tablename__ = "police_officers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    badge_id: Mapped[str] = mapped_column(String(20), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    unit: Mapped[str] = mapped_column(String(100))
+    password_hash: Mapped[str] = mapped_column(String(200))
+
+
+class PoliceSession(Base):
+    __tablename__ = "police_sessions"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    officer_id: Mapped[int] = mapped_column(ForeignKey("police_officers.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

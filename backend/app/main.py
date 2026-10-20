@@ -13,7 +13,7 @@ from .db import Base, SessionLocal, engine
 from .models import Account, CryptoSession, CryptoUser, UpiSession, Vpa
 from .models import Session as LoginSession
 from .realtime import manager
-from .routers import accounts, crypto, demo, meta, payments, upi
+from .routers import accounts, complaints, crypto, demo, meta, payments, police, upi
 from .seed_data import seed
 
 
@@ -23,6 +23,7 @@ async def lifespan(_app: FastAPI):
     with SessionLocal() as db:
         seed(db)
         crypto.ensure_exchange(db)
+        police.ensure_police(db)
     yield
 
 
@@ -36,6 +37,8 @@ app.include_router(accounts.router)
 app.include_router(payments.router)
 app.include_router(upi.router)
 app.include_router(crypto.router)
+app.include_router(complaints.router)
+app.include_router(police.router)
 app.include_router(demo.router)
 
 

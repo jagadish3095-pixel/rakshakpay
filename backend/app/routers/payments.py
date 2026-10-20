@@ -9,6 +9,7 @@ from ..models import Account, Atm, Bank, Customer
 from ..realtime import manager
 from ..security import current_customer, verify_secret
 from . import crypto
+from ..fraud import payee_warning
 from .accounts import own_account
 
 router = APIRouter(prefix="/api", tags=["payments"])
@@ -46,6 +47,8 @@ class TransferRequest(BaseModel):
     mpin: str
     remark: str = Field(default="", max_length=60)
     location: LocationIn = LocationIn()
+    # Must be true to send money to an account on the mule list.
+    acknowledge_warning: bool = False
 
 
 @router.post("/transfers")
@@ -61,6 +64,8 @@ async def transfer(req: TransferRequest, customer: Customer = Depends(current_cu
         raise HTTPException(404, "Account number and IFSC do not match any account")
     if receiver.account_no == sender.account_no:
         raise HTTPException(400, "You cannot transfer to the same account")
+    if (warning := payee_warning(receiver)) and not req.acknowledge_warning:
+        raise HTTPException(409, warning)
 
     from_bank = db.get(Bank, sender.bank_code)
     to_bank = db.get(Bank, receiver.bank_code)

@@ -44,12 +44,18 @@ def move_money(
     narration_cr: str = "",
     location: Location | None = None,
     atm_id: str | None = None,
+    release_lien: bool = False,
 ) -> Transaction:
-    """Debit one account and/or credit another. Caller must commit."""
+    """Debit one account and/or credit another. Caller must commit.
+
+    release_lien=True is only for returning held money to a victim: it may use
+    money that is under a lien (but never more than the actual balance).
+    """
     if amount <= 0:
         raise HTTPException(400, "Amount must be more than zero")
-    if debit and debit.available_balance < amount:
-        raise HTTPException(400, f"Insufficient balance. Available: {rupees(max(debit.available_balance, 0))}")
+    usable = debit.balance if (debit and release_lien) else (debit.available_balance if debit else 0)
+    if debit and usable < amount:
+        raise HTTPException(400, f"Insufficient balance. Available: {rupees(max(usable, 0))}")
 
     loc = location or Location()
     txn = Transaction(

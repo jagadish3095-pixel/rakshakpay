@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..fraud import payee_warning
 from ..ledger import move_money, rupees
 from ..models import Account, Bank, Customer, Transaction, UpiSession, UpiTransfer, UpiUser, Vpa
 from ..out import mask, mask_name
@@ -213,7 +214,7 @@ def resolve(to: str, _user: UpiUser = Depends(current_upi_user), db: Session = D
     a = vpa.account
     bank = db.get(Bank, a.bank_code)
     return {"vpa": vpa.address, "name": a.business_name or mask_name(a.customer.full_name),
-            "is_merchant": a.account_type == "CURRENT", "bank": bank.name}
+            "is_merchant": a.account_type == "CURRENT", "bank": bank.name, "warning": payee_warning(a)}
 
 
 def _own_vpa(user: UpiUser, address: str) -> Vpa:
@@ -230,6 +231,8 @@ class PayRequest(BaseModel):
     upi_pin: str
     remark: str = Field(default="", max_length=60)
     location: LocationIn = LocationIn()
+    # Must be true to pay an account on the mule list ("Pay anyway (repayment)").
+    acknowledge_warning: bool = False
 
 
 @router.post("/pay")
@@ -241,6 +244,8 @@ async def pay(req: PayRequest, user: UpiUser = Depends(current_upi_user), db: Se
     payee = _resolve(db, req.to)
     if payee.account_no == payer.account_no:
         raise HTTPException(400, "You cannot pay the same account")
+    if (warning := payee_warning(payee.account)) and not req.acknowledge_warning:
+        raise HTTPException(409, warning)
 
     payee_name = payee.account.business_name or payee.account.customer.full_name
     txn = move_money(

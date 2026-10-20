@@ -12,7 +12,7 @@ from ..models import Customer
 from ..realtime import manager
 from ..security import current_customer
 from ..seed_data import seed
-from . import crypto
+from . import crypto, police
 from .accounts import own_account
 
 router = APIRouter(prefix="/api/demo", tags=["demo"])
@@ -33,6 +33,7 @@ def reset(x_admin_key: str = Header(default=""), db: Session = Depends(get_db)):
     with Session(engine) as fresh:
         seed(fresh)
         crypto.ensure_exchange(fresh)
+        police.ensure_police(fresh)
     return {"message": "Demo data reset"}
 
 
