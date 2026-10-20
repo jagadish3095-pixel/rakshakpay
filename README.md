@@ -119,6 +119,8 @@ cd apps\bank_app;  flutter analyze;  flutter test
 `backend\.venv\Scripts\python.exe tools\demo_story.py https://rakshakpay.onrender.com` creates the 8-person story
 from `docs/PLAN.md` on a fresh database, up to the complaint. Then log in to RakshakPay as the victim
 (9000000002, passcode 1111) and report the ₹50,000 payment. Police API login: badge `CYB001`, password `police123`.
-- [ ] Phase 5 – Cyber Police app with GPS map and money-flow animation
+- [x] Phase 5 – Cyber Police app (`apps/police_app`, Android + web at **https://rakshakpay.onrender.com/police**):
+  dashboard + hotspot map, complaint map with animated money flow, money-trail tree, court orders, release to victim,
+  mule list. Rebuild the web version with `tools\build_police_web.ps1`, then commit `backend/police_web`.
 - [ ] Phase 6 – bank officer mode (mule verification / delisting)
 - [ ] Phase 7 – demo polish
