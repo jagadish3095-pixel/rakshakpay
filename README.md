@@ -110,8 +110,15 @@ cd apps\bank_app;  flutter analyze;  flutter test
 - [x] Phase 0 – project setup, Git
 - [x] Phase 1 – 5 bank apps: account opening + KYC, login, transfers (IMPS/NEFT), live passbook + PDF, ATM withdrawal with location, debit card
 - [x] Phase 2 – RakshakPay UPI app (`apps/upi_app`): register, link bank (card check + UPI PIN), UPI IDs, pay by UPI ID / mobile / QR, my QR, balance, history
-- [ ] Phase 3 – merchant app (QR + voice), crypto exchange app
-- [ ] Phase 4 – fraud engine (complaint, auto-trace, hold, mule list, PAN block, recovery lien, court, refund)
+- [x] Phase 3 – merchant soundbox app (`apps/merchant_app`), CoinVault crypto exchange (`apps/crypto_app`)
+- [x] Phase 4 – fraud engine (`backend/app/fraud.py`): complaint, auto-trace, hold victim money only, mule list,
+  PAN block, court applications + recovery lien, refund; report-fraud / complaints / notices screens in the apps
+
+### Demo story (Phase 4)
+
+`backend\.venv\Scripts\python.exe tools\demo_story.py https://rakshakpay.onrender.com` creates the 8-person story
+from `docs/PLAN.md` on a fresh database, up to the complaint. Then log in to RakshakPay as the victim
+(9000000002, passcode 1111) and report the ₹50,000 payment. Police API login: badge `CYB001`, password `police123`.
 - [ ] Phase 5 – Cyber Police app with GPS map and money-flow animation
 - [ ] Phase 6 – bank officer mode (mule verification / delisting)
 - [ ] Phase 7 – demo polish
