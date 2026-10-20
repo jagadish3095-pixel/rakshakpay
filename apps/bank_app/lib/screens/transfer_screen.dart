@@ -40,6 +40,9 @@ class _TransferScreenState extends State<TransferScreen> {
   Future<void> _send() async {
     if (!_form.currentState!.validate()) return;
     final amount = parsePaise(_amount.text)!;
+    final warning = _payee!['warning'] as String?;
+    if (warning != null && !await confirmPayMule(context, warning)) return;
+    if (!mounted) return;
     final pin = await askPin(context,
         title: 'Enter MPIN', subtitle: 'Send ${rupees(amount)} to ${_payee!['name']} via $_mode');
     if (pin == null) return;
@@ -55,6 +58,7 @@ class _TransferScreenState extends State<TransferScreen> {
         'mpin': pin,
         'remark': _remark.text,
         'location': loc.toJson(),
+        'acknowledge_warning': warning != null,
       });
       if (!mounted) return;
       await Navigator.pushReplacement(context, MaterialPageRoute(
@@ -122,6 +126,7 @@ class _TransferScreenState extends State<TransferScreen> {
                   trailing: TextButton(onPressed: () => setState(() => _payee = null), child: const Text('Change')),
                 ),
               ),
+              if (_payee!['warning'] != null) MuleWarningCard(_payee!['warning']),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _amount,

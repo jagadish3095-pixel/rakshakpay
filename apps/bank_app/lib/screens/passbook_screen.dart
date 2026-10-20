@@ -10,8 +10,11 @@ import 'home_screen.dart' show EntryTile;
 
 /// Full passbook. Updates by itself when money comes in or goes out.
 class PassbookScreen extends StatefulWidget {
-  const PassbookScreen({super.key, required this.accountNo});
+  const PassbookScreen({super.key, required this.accountNo, this.reportMode = false});
   final String accountNo;
+
+  /// Opened from "Report fraud": show debits and explain what to tap.
+  final bool reportMode;
 
   @override
   State<PassbookScreen> createState() => _PassbookScreenState();
@@ -20,7 +23,51 @@ class PassbookScreen extends StatefulWidget {
 class _PassbookScreenState extends State<PassbookScreen> {
   Map<String, dynamic>? _data;
   List<PassbookEntry> _entries = [];
-  String _filter = 'ALL';
+  late String _filter = widget.reportMode ? 'DR' : 'ALL';
+
+  static const _reportable = {'IMPS', 'NEFT', 'INTERNAL', 'UPI'};
+
+  /// "IMPS/DR/RAVI KUMAR/GNGA/123..." -> "RAVI KUMAR"
+  String _payee(PassbookEntry e) {
+    final parts = e.narration.split('/');
+    return parts.length > 2 ? parts[2] : e.narration;
+  }
+
+  void _details(PassbookEntry e) {
+    final canReport = !e.isCredit && _reportable.contains(e.channel);
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${e.isCredit ? 'Credit' : 'Debit'} ${rupees(e.amount)}', style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(e.narration),
+            Text('UTR ${e.utr} • ${e.channel}'),
+            Text(formatDateTime(e.date)),
+            if (e.locationLabel.isNotEmpty) Text('Location: ${e.locationLabel}'),
+            if (e.remark.isNotEmpty) Text('Remark: ${e.remark}'),
+            const SizedBox(height: 16),
+            if (canReport)
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => ReportFraudScreen(
+                      api: api, location: location, postPath: '/api/complaints',
+                      utr: e.utr, amount: e.amount, paidTo: _payee(e), date: e.date),
+                  ));
+                },
+                icon: const Icon(Icons.report),
+                label: const Text('Report this payment as fraud (1930)'),
+              ),
+          ]),
+        ),
+      ),
+    );
+  }
   StreamSubscription<String>? _liveSub;
   bool _flash = false;
 
@@ -122,7 +169,16 @@ class _PassbookScreenState extends State<PassbookScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
                         if (shown.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No transactions')),
-                        for (final e in shown) EntryTile(e),
+                        if (widget.reportMode)
+                          Card(
+                            color: Colors.red.shade50,
+                            child: const ListTile(
+                              leading: Icon(Icons.report, color: Colors.red),
+                              title: Text('Which payment was fraud?'),
+                              subtitle: Text('Tap the payment to report it.'),
+                            ),
+                          ),
+                        for (final e in shown) EntryTile(e, onTap: () => _details(e)),
                       ],
                     ),
                   ),

@@ -45,6 +45,9 @@ class _PayScreenState extends State<PayScreen> {
   Future<void> _pay() async {
     final amount = parsePaise(_amount.text);
     if (amount == null) return showError(context, 'Enter a valid amount');
+    final warning = _payee!['warning'] as String?;
+    if (warning != null && !await confirmPayMule(context, warning)) return;
+    if (!mounted) return;
     final pin = await askPin(context,
         title: 'Enter UPI PIN', subtitle: 'Pay ${rupees(amount)} to ${_payee!['name']}\nfrom ${_from.address}');
     if (pin == null) return;
@@ -58,6 +61,7 @@ class _PayScreenState extends State<PayScreen> {
         'upi_pin': pin,
         'remark': _note.text,
         'location': loc.toJson(),
+        'acknowledge_warning': warning != null,
       });
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(
@@ -110,6 +114,7 @@ class _PayScreenState extends State<PayScreen> {
                     : null,
               ),
             ),
+            if (payee['warning'] != null) MuleWarningCard(payee['warning']),
             const SizedBox(height: 16),
             TextField(
               controller: _amount,

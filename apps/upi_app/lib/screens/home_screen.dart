@@ -93,6 +93,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Row(children: [RakshakLogo(size: 30, onDark: true), SizedBox(width: 8), Text('RakshakPay')]),
         actions: [
+          IconButton(
+            tooltip: 'Notices',
+            icon: const Icon(Icons.notifications),
+            onPressed: () => _open(NoticesScreen(api: api, path: '/api/upi/notices')),
+          ),
           PopupMenuButton<String>(
             onSelected: (v) => v == 'settings' ? _open(SettingsScreen(api: api, location: location)) : _logout(),
             itemBuilder: (_) => const [
@@ -110,6 +115,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   _ProfileCard(p, onLink: () => _open(const LinkBankScreen())),
+                  if (p.vpas.any((v) => v.status != 'ACTIVE'))
+                    Card(
+                      color: Colors.red.shade50,
+                      margin: const EdgeInsets.only(top: 12),
+                      child: ListTile(
+                        leading: const Icon(Icons.gpp_bad, color: Colors.red),
+                        title: const Text('Your account is on the mule list'),
+                        subtitle: const Text('Payments are blocked. Tap to read the notice; '
+                            'visit your home branch for verification.'),
+                        onTap: () => _open(NoticesScreen(api: api, path: '/api/upi/notices')),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   if (p.vpas.isNotEmpty) ...[
                     FilledButton.icon(
@@ -134,6 +151,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         _Action(Icons.account_balance, 'Bank\naccounts', () => _open(AccountsScreen(profile: p))),
                         _Action(Icons.history, 'History', () => _open(const HistoryScreen())),
                         _Action(Icons.add_link, 'Link bank', () => _open(const LinkBankScreen())),
+                        _Action(Icons.report, 'Report\nfraud (1930)', () => _open(const HistoryScreen(reportMode: true)),
+                            color: Colors.red),
+                        _Action(Icons.assignment, 'My\ncomplaints',
+                            () => _open(ComplaintsScreen(api: api, path: '/api/upi/complaints'))),
+                        _Action(Icons.notifications, 'Notices',
+                            () => _open(NoticesScreen(api: api, path: '/api/upi/notices'))),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -202,21 +225,22 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _Action extends StatelessWidget {
-  const _Action(this.icon, this.label, this.onTap);
+  const _Action(this.icon, this.label, this.onTap, {this.color = kIndigo});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kIndigo.withValues(alpha: 0.07),
+      color: color.withValues(alpha: 0.07),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: kIndigo, size: 28),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 6),
           Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
         ]),

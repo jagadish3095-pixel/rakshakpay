@@ -103,6 +103,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(children: [BankLogo(brand, size: 32), const SizedBox(width: 10), Text(brand.name)]),
         actions: [
+          IconButton(
+            tooltip: 'Notices',
+            icon: const Icon(Icons.notifications),
+            onPressed: () => _open(NoticesScreen(api: api, path: '/api/notices')),
+          ),
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
               'settings' => _open(SettingsScreen(api: api, location: location)),
@@ -127,7 +132,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text('Namaste, ${_customer!.fullName.split(' ').first}',
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
-                  if (!acc.isActive) _RestrictionBanner(acc),
+                  if (!acc.isActive)
+                    InkWell(
+                      onTap: () => _open(NoticesScreen(api: api, path: '/api/notices')),
+                      child: _RestrictionBanner(acc),
+                    ),
                   _BalanceCard(acc),
                   const SizedBox(height: 16),
                   GridView.count(
@@ -143,6 +152,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       _Action(Icons.credit_card, 'Debit card', () => _open(CardScreen(account: acc))),
                       _Action(Icons.person, 'Profile', () => _open(ProfileScreen(customer: _customer!))),
                       _Action(Icons.add_card, 'Demo deposit', _demoDeposit),
+                      _Action(Icons.report, 'Report fraud\n(1930)',
+                          () => _open(PassbookScreen(accountNo: acc.accountNo, reportMode: true))),
+                      _Action(Icons.assignment, 'My complaints',
+                          () => _open(ComplaintsScreen(api: api, path: '/api/complaints'))),
+                      _Action(Icons.notifications, 'Notices',
+                          () => _open(NoticesScreen(api: api, path: '/api/notices'))),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -246,13 +261,15 @@ class _Action extends StatelessWidget {
 
 /// One passbook line, used on Home and in the Passbook.
 class EntryTile extends StatelessWidget {
-  const EntryTile(this.e, {super.key});
+  const EntryTile(this.e, {super.key, this.onTap});
   final PassbookEntry e;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = e.isCredit ? Colors.green.shade700 : Colors.red.shade700;
     return ListTile(
+      onTap: onTap,
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: 0.1),

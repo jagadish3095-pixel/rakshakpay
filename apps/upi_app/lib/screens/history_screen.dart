@@ -8,7 +8,10 @@ import 'home_screen.dart' show PaymentTile;
 
 /// All UPI payments, newest first. Refreshes by itself when money moves.
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.reportMode = false});
+
+  /// Opened from "Report fraud": show only sent payments and explain what to tap.
+  final bool reportMode;
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -16,7 +19,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   List<UpiPayment>? _items;
-  String _filter = 'ALL';
+  late String _filter = widget.reportMode ? 'SENT' : 'ALL';
   StreamSubscription<String>? _liveSub;
 
   @override
@@ -53,6 +56,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: _items == null
           ? const Center(child: CircularProgressIndicator())
           : Column(children: [
+              if (widget.reportMode)
+                Card(
+                  color: Colors.red.shade50,
+                  margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: const ListTile(
+                    leading: Icon(Icons.report, color: Colors.red),
+                    title: Text('Which payment was fraud?'),
+                    subtitle: Text('Tap the payment, then "Report fraud".'),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
@@ -89,7 +102,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 if (p.locationLabel.isNotEmpty) 'Location: ${p.locationLabel}',
                                 'Status: ${p.status}',
                               ].join('\n')),
-                              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+                              actions: [
+                                if (p.sent)
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => ReportFraudScreen(
+                                          api: api, location: location, postPath: '/api/upi/complaints',
+                                          utr: p.utr, amount: p.amount, paidTo: p.otherName, date: p.date),
+                                      ));
+                                    },
+                                    icon: const Icon(Icons.report, color: Colors.red),
+                                    label: const Text('Report fraud', style: TextStyle(color: Colors.red)),
+                                  ),
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                              ],
                             ),
                           ),
                           child: PaymentTile(p),
