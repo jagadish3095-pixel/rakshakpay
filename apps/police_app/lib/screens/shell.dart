@@ -7,6 +7,7 @@ import 'court_orders_screen.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 import 'mules_screen.dart';
+import 'verifications_screen.dart';
 
 /// Main navigation: side rail on laptops/tablets, bottom bar on phones.
 class Shell extends StatefulWidget {
@@ -23,6 +24,7 @@ class _ShellState extends State<Shell> {
     (Icons.dashboard, 'Dashboard'),
     (Icons.assignment, 'Complaints'),
     (Icons.gavel, 'Court orders'),
+    (Icons.fact_check, 'Verifications'),
     (Icons.gpp_bad, 'Mule list'),
   ];
 
@@ -39,6 +41,7 @@ class _ShellState extends State<Shell> {
       0 => const DashboardScreen(),
       1 => const PoliceComplaintsScreen(),
       2 => const CourtOrdersScreen(),
+      3 => const VerificationsScreen(),
       _ => const MulesScreen(),
     };
     final wide = MediaQuery.sizeOf(context).width >= 900;

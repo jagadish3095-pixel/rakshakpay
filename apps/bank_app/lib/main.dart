@@ -10,6 +10,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await api.init();
+  await officerApi.init();
   runApp(const BankApp());
 }
 

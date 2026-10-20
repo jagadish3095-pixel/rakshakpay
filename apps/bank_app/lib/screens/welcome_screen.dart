@@ -3,6 +3,7 @@ import 'package:rakshak_core/rakshak_core.dart';
 
 import '../services.dart';
 import 'login_screen.dart';
+import 'officer/officer_login_screen.dart';
 import 'open_account_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -96,7 +97,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenAccountScreen())),
                   child: const Text('Open a new account', style: TextStyle(fontSize: 17)),
                 ),
-                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () =>
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const OfficerLoginScreen())),
+                  icon: const Icon(Icons.badge, color: Colors.white70),
+                  label: const Text('Bank staff login', style: TextStyle(color: Colors.white70)),
+                ),
                 const Text('Demo bank for RakshakPay • Fake money only',
                     textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 12)),
               ],
