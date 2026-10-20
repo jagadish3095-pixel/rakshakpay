@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from .ledger import move_money, rupees
 from .models import (Account, Bank, Complaint, CourtOrder, CryptoBalance, CryptoEntry, CryptoUser, Notice,
-                     PanBlacklist, Transaction, TrailEdge, TrailNode)
+                     PanBlacklist, Transaction, TrailEdge, TrailNode, VerificationCase)
 from .out import mask
 from .routers.crypto import COINS, UNITS, exchange_account, price_paise
 
@@ -310,3 +310,54 @@ def _seize_crypto(db: Session, account_no: str, amount: int) -> int:
         db.add(CryptoEntry(crypto_user_id=user.id, kind="POLICE_SEIZURE", asset=asset,
                            quantity=0 if asset == "INR" else take, inr_paise=value))
     return seized
+
+
+# ---------------------------------------------------------------- Phase 6: branch verification decisions
+
+DECISIONS = {"INNOCENT", "TRICKED", "INVOLVED"}
+
+
+def decide_verification(db: Session, case: VerificationCase, decision: str, remarks: str, officer_name: str) -> set[str]:
+    """Applies the police decision to every account with the customer's PAN.
+
+    INNOCENT  - hacked / stolen identity: back to ACTIVE, PAN unblocked.
+    TRICKED   - fooled by a job/commission scam, signed an undertaking: back to ACTIVE, PAN unblocked,
+                but court-approved recovery liens stay (available balance stays negative until repaid).
+    INVOLVED  - knowingly rented or sold the account: CONFIRMED_MULE, stays blocked.
+    In every case money held for victims stays held until the court's refund order.
+    """
+    pan = case.account.customer.pan
+    linked = db.query(Account).join(Account.customer).filter_by(pan=pan).all()
+    restore = decision in ("INNOCENT", "TRICKED")
+    for acc in linked:
+        if acc.status in (MULE, "CONFIRMED_MULE"):
+            acc.status = "ACTIVE" if restore else "CONFIRMED_MULE"
+    blacklisted = db.get(PanBlacklist, pan)
+    if restore and blacklisted:
+        db.delete(blacklisted)
+
+    case.status = "DECIDED"
+    case.decision = decision
+    case.police_remarks = remarks.strip()
+    case.decided_by = officer_name
+    case.decided_at = datetime.now()
+
+    title, body = {
+        "INNOCENT": ("Removed from the mule list",
+                     "After branch verification the police found that your account was misused without your "
+                     "knowledge. All services are restored."),
+        "TRICKED": ("Services restored with conditions",
+                    "After branch verification the police accepted that you were tricked. Services are restored "
+                    "under your signed undertaking. Any court-approved recovery amount must still be repaid: "
+                    "money coming into your account goes to the victim first."),
+        "INVOLVED": ("Confirmed as a money mule",
+                     "After branch verification the police found that you knowingly allowed your account to be used "
+                     "for fraud. Your accounts stay blocked across all banks and the police case continues."),
+    }[decision]
+    held_note = " Money held for fraud victims stays on hold until the court's refund order." if any(
+        a.lien_amount for a in linked) else ""
+    for acc in linked:
+        db.add(Notice(account_no=acc.account_no, kind="VERIFIED" if restore else "MULE", title=title,
+                      body=body + (f" Police remarks: {case.police_remarks}" if case.police_remarks else "") + held_note))
+    db.commit()
+    return {a.account_no for a in linked}

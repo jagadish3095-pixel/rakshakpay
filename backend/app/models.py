@@ -403,3 +403,55 @@ class PoliceSession(Base):
     token: Mapped[str] = mapped_column(String(64), primary_key=True)
     officer_id: Mapped[int] = mapped_column(ForeignKey("police_officers.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+# ---------------------------------------------------------------- Phase 6: branch verification of mules
+
+
+class BankOfficer(Base):
+    """Bank branch staff who verify customers on the mule list."""
+
+    __tablename__ = "bank_officers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    staff_id: Mapped[str] = mapped_column(String(20), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    bank_code: Mapped[str] = mapped_column(ForeignKey("banks.code"))
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"))
+    password_hash: Mapped[str] = mapped_column(String(200))
+
+    branch: Mapped[Branch] = relationship()
+
+
+class OfficerSession(Base):
+    __tablename__ = "officer_sessions"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    officer_id: Mapped[int] = mapped_column(ForeignKey("bank_officers.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class VerificationCase(Base):
+    """A flagged customer's branch visit: re-KYC, their statement, the officer's
+    recommendation, and the police decision (INNOCENT | TRICKED | INVOLVED)."""
+
+    __tablename__ = "verification_cases"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"), index=True)
+    officer_id: Mapped[int] = mapped_column(ForeignKey("bank_officers.id"))
+    kyc_checks: Mapped[str] = mapped_column(String(200))  # comma-separated checks done at the branch
+    reason_category: Mapped[str] = mapped_column(String(60))
+    statement: Mapped[str] = mapped_column(Text)
+    recommendation: Mapped[str] = mapped_column(String(10))  # INNOCENT | TRICKED | INVOLVED
+    officer_notes: Mapped[str] = mapped_column(Text, default="")
+    undertaking_signed: Mapped[bool] = mapped_column(Boolean, default=False)
+    awareness_done: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(16), default="PENDING_POLICE")  # PENDING_POLICE | DECIDED
+    decision: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    police_remarks: Mapped[str] = mapped_column(Text, default="")
+    decided_by: Mapped[str] = mapped_column(String(100), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    account: Mapped[Account] = relationship()
+    officer: Mapped[BankOfficer] = relationship()

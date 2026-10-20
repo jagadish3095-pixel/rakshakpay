@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session
 from .. import fraud
 from ..db import get_db
 from ..models import (Account, Bank, Complaint, CourtOrder, PoliceOfficer, PoliceSession, Transaction, TrailEdge,
-                      TrailNode)
+                      TrailNode, VerificationCase)
 from ..realtime import manager
 from ..security import hash_secret, new_token, verify_secret
 from ..seed_data import CITIES
+from . import officer
 from .complaints import complaint_out
 
 router = APIRouter(prefix="/api/police", tags=["police"])
@@ -230,6 +231,33 @@ async def release(complaint_id: int, _o: PoliceOfficer = Depends(current_officer
     amount, touched = fraud.release_to_victim(db, c)
     await manager.account_changed(*touched)
     return {"released": amount, "complaint": complaint_out(c)}
+
+
+@router.get("/verifications")
+def verifications(_o: PoliceOfficer = Depends(current_officer), db: Session = Depends(get_db)):
+    """Branch verifications of mules; waiting ones first."""
+    rows = db.query(VerificationCase).order_by(VerificationCase.status.desc(), VerificationCase.id.desc()).all()
+    return [officer.case_out(db, c) for c in rows]
+
+
+class DecisionRequest(BaseModel):
+    decision: str  # INNOCENT | TRICKED | INVOLVED
+    remarks: str = ""
+
+
+@router.post("/verifications/{case_id}/decide")
+async def decide(case_id: int, req: DecisionRequest, o: PoliceOfficer = Depends(current_officer),
+                 db: Session = Depends(get_db)):
+    case = db.get(VerificationCase, case_id)
+    if not case:
+        raise HTTPException(404, "Verification not found")
+    if case.status != "PENDING_POLICE":
+        raise HTTPException(409, "Already decided")
+    if req.decision not in fraud.DECISIONS:
+        raise HTTPException(400, "Decision must be INNOCENT, TRICKED or INVOLVED")
+    touched = fraud.decide_verification(db, case, req.decision, req.remarks, o.name)
+    await manager.account_changed(*touched)
+    return officer.case_out(db, case)
 
 
 @router.get("/mules")
