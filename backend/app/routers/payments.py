@@ -8,6 +8,7 @@ from ..ledger import Location, move_money, rupees
 from ..models import Account, Atm, Bank, Customer
 from ..realtime import manager
 from ..security import current_customer, verify_secret
+from . import crypto
 from .accounts import own_account
 
 router = APIRouter(prefix="/api", tags=["payments"])
@@ -76,7 +77,11 @@ async def transfer(req: TransferRequest, customer: Customer = Depends(current_cu
     )
     db.commit()
     await manager.account_changed(sender.account_no, receiver.account_no)
-    return {"message": f"{rupees(req.amount)} sent to {to_name}", "utr": txn.utr,
+    # Bank transfer to the crypto exchange: credit the sender's CoinVault wallet, or refund.
+    note = ""
+    if receiver.account_no == crypto.exchange_account(db).account_no:
+        note = await crypto.handle_exchange_credit(db, txn, sender)
+    return {"message": f"{rupees(req.amount)} sent to {to_name}", "utr": txn.utr, "note": note,
             "channel": channel, "date": txn.created_at.isoformat(),
             "balance": sender.balance, "available_balance": sender.available_balance}
 

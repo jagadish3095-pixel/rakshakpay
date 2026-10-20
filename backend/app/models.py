@@ -5,7 +5,7 @@ so we never get floating-point rounding errors.
 """
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -224,3 +224,57 @@ class UpiTransfer(Base):
     payee_vpa: Mapped[str] = mapped_column(String(60), index=True)
 
     txn: Mapped[Transaction] = relationship()
+
+
+# ---------------------------------------------------------------- CoinVault crypto exchange
+
+
+class CryptoUser(Base):
+    """A KYC-verified CoinVault exchange user. PAN must match their bank account."""
+
+    __tablename__ = "crypto_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mobile: Mapped[str] = mapped_column(String(10), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    pan: Mapped[str] = mapped_column(String(10), unique=True)
+    pin_hash: Mapped[str] = mapped_column(String(200))
+    bank_account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))  # for withdrawals
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+    bank_account: Mapped[Account] = relationship()
+
+
+class CryptoSession(Base):
+    __tablename__ = "crypto_sessions"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    crypto_user_id: Mapped[int] = mapped_column(ForeignKey("crypto_users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class CryptoBalance(Base):
+    """Wallet balance. INR is in paise; coins are in 1/100,000,000 units (like satoshis)."""
+
+    __tablename__ = "crypto_balances"
+
+    crypto_user_id: Mapped[int] = mapped_column(ForeignKey("crypto_users.id"), primary_key=True)
+    asset: Mapped[str] = mapped_column(String(6), primary_key=True)  # INR | BTC | ETH | USDT
+    amount: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class CryptoEntry(Base):
+    """Exchange ledger: every deposit, trade and withdrawal."""
+
+    __tablename__ = "crypto_entries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    crypto_user_id: Mapped[int] = mapped_column(ForeignKey("crypto_users.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # DEPOSIT | BUY | SELL | WITHDRAW_INR | WITHDRAW_CRYPTO
+    asset: Mapped[str] = mapped_column(String(6))
+    quantity: Mapped[int] = mapped_column(BigInteger, default=0)  # coin units (0 for INR-only entries)
+    inr_paise: Mapped[int] = mapped_column(BigInteger, default=0)
+    price_paise: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # price per 1 coin
+    txn_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"), nullable=True)
+    address: Mapped[str] = mapped_column(String(100), default="")  # outside wallet for WITHDRAW_CRYPTO
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

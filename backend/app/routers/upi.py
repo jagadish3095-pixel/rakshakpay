@@ -17,6 +17,7 @@ from ..models import Account, Bank, Customer, Transaction, UpiSession, UpiTransf
 from ..out import mask, mask_name
 from ..realtime import manager
 from ..security import current_upi_user, hash_secret, new_token, verify_secret
+from . import crypto
 from .payments import LocationIn, ensure_can_debit
 
 router = APIRouter(prefix="/api/upi", tags=["upi"])
@@ -251,7 +252,11 @@ async def pay(req: PayRequest, user: UpiUser = Depends(current_upi_user), db: Se
     db.add(UpiTransfer(txn_id=txn.id, payer_vpa=payer.address, payee_vpa=payee.address))
     db.commit()
     await manager.account_changed(payer.account_no, payee.account_no)
-    return {"message": f"{rupees(req.amount)} paid to {payee_name}", "utr": txn.utr,
+    # Paying the crypto exchange: credit the payer's CoinVault wallet, or refund.
+    note = ""
+    if payee.address == crypto.EXCHANGE["vpa"]:
+        note = await crypto.handle_exchange_credit(db, txn, payer.account, payer.address)
+    return {"message": f"{rupees(req.amount)} paid to {payee_name}", "utr": txn.utr, "note": note,
             "date": txn.created_at.isoformat(), "payee_vpa": payee.address, "payee_name": payee_name}
 
 

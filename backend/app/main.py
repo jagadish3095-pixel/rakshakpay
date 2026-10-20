@@ -10,10 +10,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Base, SessionLocal, engine
-from .models import Account, UpiSession, Vpa
+from .models import Account, CryptoSession, CryptoUser, UpiSession, Vpa
 from .models import Session as LoginSession
 from .realtime import manager
-from .routers import accounts, demo, meta, payments, upi
+from .routers import accounts, crypto, demo, meta, payments, upi
 from .seed_data import seed
 
 
@@ -22,6 +22,7 @@ async def lifespan(_app: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed(db)
+        crypto.ensure_exchange(db)
     yield
 
 
@@ -34,6 +35,7 @@ app.include_router(meta.router)
 app.include_router(accounts.router)
 app.include_router(payments.router)
 app.include_router(upi.router)
+app.include_router(crypto.router)
 app.include_router(demo.router)
 
 
@@ -43,12 +45,15 @@ def health():
 
 
 def _watched_accounts(token: str) -> list[str] | None:
-    """Accounts a bank-app or UPI-app login may watch; None if the token is not valid."""
+    """Accounts a bank, UPI or crypto app login may watch; None if the token is not valid."""
     with SessionLocal() as db:
         if bank := db.get(LoginSession, token):
             return [a.account_no for a in db.query(Account).filter_by(customer_id=bank.customer_id)]
         if upi := db.get(UpiSession, token):
             return [v.account_no for v in db.query(Vpa).filter_by(upi_user_id=upi.upi_user_id)]
+        if cs := db.get(CryptoSession, token):
+            # Deposits and withdrawals move money in the user's own bank account.
+            return [db.get(CryptoUser, cs.crypto_user_id).bank_account_no]
     return None
 
 
