@@ -43,9 +43,13 @@ class _PinLockScreenState extends State<PinLockScreen> {
   @override
   void initState() {
     super.initState();
+    // Loading the name also checks that the saved login still exists on the server.
+    // If it does not (e.g. the demo was reset), skip the PIN and go straight to log in.
     widget.loadName?.call().then((n) {
       if (mounted) setState(() => _name = n);
-    }, onError: (_) {});
+    }, onError: (Object e) {
+      if (mounted && e is ApiException && e.statusCode == 401) widget.onLogout();
+    });
   }
 
   void _press(String digit) {
