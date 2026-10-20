@@ -44,10 +44,11 @@ def _allowed(db: Session, x_admin_key: str, authorization: str) -> bool:
 
 
 @router.post("/reset")
-def reset(x_admin_key: str = Header(default=""), db: Session = Depends(get_db)):
-    """Wipe all customers and money; re-create the 5 banks."""
-    if ADMIN_KEY and not hmac.compare_digest(x_admin_key, ADMIN_KEY):
-        raise HTTPException(403, "Admin key required to reset the demo")
+def reset(x_admin_key: str = Header(default=""), authorization: str = Header(default=""),
+          db: Session = Depends(get_db)):
+    """Wipe all customers and money; re-create the 5 banks (no demo story)."""
+    if not _allowed(db, x_admin_key, authorization):
+        raise HTTPException(403, "Only the police console (or the admin key) can reset the demo")
     db.close()
     _reset_database()
     return {"message": "Demo data reset"}

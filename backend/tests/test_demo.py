@@ -25,6 +25,11 @@ def test_load_story_needs_police_and_plays_the_whole_story(client, monkeypatch):
     dash = client.get("/api/police/dashboard", headers=fresh).json()
     assert dash["complaints"] == 1 and dash["mule_accounts"] >= 7
 
+    # plain reset (no story) also works with a police login
+    assert client.post("/api/demo/reset").status_code == 403
+    assert client.post("/api/demo/reset", headers=fresh).status_code == 200
+    fresh = police_login(client)
+
     # loading again starts from scratch (no "already exists" errors)
     again = client.post("/api/demo/load-story", headers=fresh).json()
     assert again["complaint"] is None
