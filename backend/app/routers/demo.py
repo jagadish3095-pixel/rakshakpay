@@ -51,7 +51,17 @@ def reset(x_admin_key: str = Header(default=""), authorization: str = Header(def
         raise HTTPException(403, "Only the police console (or the admin key) can reset the demo")
     db.close()
     _reset_database()
-    return {"message": "Demo data reset"}
+    return {"message": "Demo data reset", "police_token": _new_police_token()}
+
+
+def _new_police_token() -> str:
+    """The wipe removes all logins; give the police console a fresh one so it stays signed in."""
+    with Session(engine) as fresh:
+        o = fresh.query(PoliceOfficer).filter_by(badge_id=police.DEMO_OFFICER["badge_id"]).first()
+        token = new_token()
+        fresh.add(PoliceSession(token=token, officer_id=o.id))
+        fresh.commit()
+    return token
 
 
 @router.post("/load-story")
@@ -71,12 +81,7 @@ async def load_story(request: Request, file_complaint: bool = False, x_admin_key
             story = await run_story(client, file_complaint=file_complaint, log=lambda _msg: None)
         except StoryError as e:
             raise HTTPException(500, f"Demo story failed: {e}")
-    with Session(engine) as fresh:
-        o = fresh.query(PoliceOfficer).filter_by(badge_id=police.DEMO_OFFICER["badge_id"]).first()
-        token = new_token()
-        fresh.add(PoliceSession(token=token, officer_id=o.id))
-        fresh.commit()
-    return {**story, "police_token": token}
+    return {**story, "police_token": _new_police_token()}
 
 
 class CashDepositRequest(BaseModel):

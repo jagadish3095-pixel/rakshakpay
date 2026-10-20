@@ -76,6 +76,56 @@ Future<bool> resetAndLoadDemo(BuildContext context) async {
   }
 }
 
+/// "Reset (empty)": wipes the server with no demo story, so you can create your own people.
+/// Returns true when the reset happened.
+Future<bool> resetEmpty(BuildContext context) async {
+  final confirm = TextEditingController();
+  final go = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        icon: const Icon(Icons.delete_forever, size: 40, color: Colors.red),
+        title: const Text('Reset everything (empty)'),
+        content: SizedBox(
+          width: 480,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('This deletes EVERY customer, account, payment, UPI user, CoinVault user, complaint and '
+                'court order on the server. Only the 5 banks, their branches and ATMs, the CoinVault exchange '
+                'account, the police officer and the bank staff logins remain.\n\n'
+                'Everyone on every phone will have to log in again.'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: confirm,
+              decoration: const InputDecoration(labelText: 'Type RESET to confirm'),
+              onChanged: (_) => setState(() {}),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: confirm.text.trim().toUpperCase() == 'RESET' ? () => Navigator.pop(ctx, true) : null,
+            child: const Text('Delete everything'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (go != true || !context.mounted) return false;
+  try {
+    final res = await api.post('/api/demo/reset');
+    await api.setToken(res['police_token']);
+    live.stop();
+    live.start();
+    if (context.mounted) showInfo(context, 'Everything deleted. The server is empty.');
+    return true;
+  } catch (e) {
+    if (context.mounted) showError(context, e);
+    return false;
+  }
+}
+
 Future<void> _showLogins(BuildContext context, Map<String, dynamic> story) {
   final logins = story['logins'] as Map<String, dynamic>;
   const roles = {

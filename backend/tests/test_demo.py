@@ -27,8 +27,10 @@ def test_load_story_needs_police_and_plays_the_whole_story(client, monkeypatch):
 
     # plain reset (no story) also works with a police login
     assert client.post("/api/demo/reset").status_code == 403
-    assert client.post("/api/demo/reset", headers=fresh).status_code == 200
-    fresh = police_login(client)
+    plain = client.post("/api/demo/reset", headers=fresh)
+    assert plain.status_code == 200
+    fresh = {"Authorization": f"Bearer {plain.json()['police_token']}"}
+    assert client.get("/api/police/dashboard", headers=fresh).json()["complaints"] == 0
 
     # loading again starts from scratch (no "already exists" errors)
     again = client.post("/api/demo/load-story", headers=fresh).json()

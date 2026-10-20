@@ -22,11 +22,21 @@ class _ShellState extends State<Shell> {
   int _tab = 0;
   int _generation = 0; // bumped after a demo reset so every screen reloads
 
+  @override
+  void initState() {
+    super.initState();
+    // A saved login may no longer exist (e.g. after a reset from another device): go to the login screen.
+    api.get('/api/police/me').catchError((Object e) {
+      if (e is ApiException && e.statusCode == 401) _logout();
+      return null;
+    });
+  }
+
   static const _destinations = [
     (Icons.dashboard, 'Dashboard'),
     (Icons.assignment, 'Complaints'),
     (Icons.gavel, 'Court orders'),
-    (Icons.fact_check, 'Verifications'),
+    (Icons.fact_check, 'Verify'),
     (Icons.gpp_bad, 'Mule list'),
   ];
 
@@ -54,18 +64,28 @@ class _ShellState extends State<Shell> {
       appBar: AppBar(
         title: const Row(children: [Icon(Icons.local_police), SizedBox(width: 8), Text('Cyber Police')]),
         actions: [
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: kAmber),
-            onPressed: () async {
-              if (await resetAndLoadDemo(context)) {
+          PopupMenuButton<String>(
+            tooltip: 'Demo reset',
+            icon: const Icon(Icons.restart_alt, color: kAmber),
+            onSelected: (v) async {
+              final done = v == 'story' ? await resetAndLoadDemo(context) : await resetEmpty(context);
+              if (done) {
                 setState(() {
                   _tab = 0;
                   _generation++;
                 });
               }
             },
-            icon: const Icon(Icons.restart_alt),
-            label: Text(MediaQuery.sizeOf(context).width >= 600 ? 'Demo reset' : ''),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'story',
+                child: ListTile(leading: Icon(Icons.movie), title: Text('Reset & load demo story')),
+              ),
+              PopupMenuItem(
+                value: 'empty',
+                child: ListTile(leading: Icon(Icons.delete_forever, color: Colors.red), title: Text('Reset everything (empty)')),
+              ),
+            ],
           ),
           IconButton(
             tooltip: 'Settings',
