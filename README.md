@@ -122,5 +122,7 @@ from `docs/PLAN.md` on a fresh database, up to the complaint. Then log in to Rak
 - [x] Phase 5 – Cyber Police app (`apps/police_app`, Android + web at **https://rakshakpay.onrender.com/police**):
   dashboard + hotspot map, complaint map with animated money flow, money-trail tree, court orders, release to victim,
   mule list. Rebuild the web version with `tools\build_police_web.ps1`, then commit `backend/police_web`.
-- [ ] Phase 6 – bank officer mode (mule verification / delisting)
+- [x] Phase 6 – bank officer mode: in any bank app tap **Bank staff login** (staff ID `SAHY001`, `GANG001`, `KAVR001`,
+  `NARM001` or `GODA001`, password `officer123`) → find a flagged customer → re-KYC → statement → recommendation;
+  the police decide in the Cyber Police app's **Verifications** tab (innocent / tricked / involved)
 - [ ] Phase 7 – demo polish
