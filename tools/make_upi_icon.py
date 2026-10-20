@@ -2,6 +2,7 @@
 
 Run once (needs Pillow):  backend/.venv/Scripts/python tools/make_upi_icon.py
 """
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -45,9 +46,24 @@ def draw_coinvault(size):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def draw_police(size):
+    """Cyber Police: amber star badge on navy."""
+    big = size * 4
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((0, 0, big - 1, big - 1), radius=big // 5, fill="#0D2B5E")
+    d.regular_polygon((big / 2, big / 2, big * 0.36), n_sides=6, rotation=0, fill="#FFB300")
+    c, r_out, r_in = big / 2, big * 0.22, big * 0.09
+    star = [(c + (r_out if i % 2 == 0 else r_in) * math.cos(math.pi / 2 + i * math.pi / 5),
+             c - (r_out if i % 2 == 0 else r_in) * math.sin(math.pi / 2 + i * math.pi / 5)) for i in range(10)]
+    d.polygon(star, fill="#0D2B5E")
+    return img.resize((size, size), Image.LANCZOS)
+
+
 APPS = {"upi_app": lambda px: draw(px, INDIGO, SAFFRON),
         "merchant_app": lambda px: draw(px, SAFFRON, INDIGO),
-        "crypto_app": draw_coinvault}
+        "crypto_app": draw_coinvault,
+        "police_app": draw_police}
 
 for app, painter in APPS.items():
     res = ROOT / "apps" / app / "android" / "app" / "src" / "main" / "res"

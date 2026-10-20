@@ -8,6 +8,12 @@
       "port": 8000
     },
     {
+      "name": "police-test",
+      "runtimeExecutable": "C:\\dev\\RakshakPay\\backend\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-c", "import os, uvicorn; os.environ['RAKSHAK_DB'] = os.path.join(os.environ['TEMP'], 'rakshak_police_test.db'); uvicorn.run('app.main:app', app_dir=r'C:\\dev\\RakshakPay\\backend', port=8766)"],
+      "port": 8766
+    },
+    {
       "name": "bank-web",
       "runtimeExecutable": "C:\\dev\\RakshakPay\\backend\\.venv\\Scripts\\python.exe",
       "runtimeArgs": ["-m", "http.server", "8080", "--directory", "C:\\dev\\RakshakPay\\apps\\bank_app\\build\\web"],

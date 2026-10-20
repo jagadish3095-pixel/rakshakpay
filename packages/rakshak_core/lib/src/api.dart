@@ -31,8 +31,9 @@ class RakshakApi {
 
   static String get defaultUrl => _buildServer.isNotEmpty
       ? _buildServer
-      // The Android emulator reaches the laptop at 10.0.2.2.
-      : (kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000');
+      // Web: the server that served the page (e.g. https://rakshakpay.onrender.com/police).
+      // Android emulator: reaches the laptop at 10.0.2.2.
+      : (kIsWeb ? Uri.base.origin : 'http://10.0.2.2:8000');
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
