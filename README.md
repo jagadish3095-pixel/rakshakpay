@@ -23,7 +23,7 @@ RakshakPay/
 ├─ tools/                   icon generator, test-account creator
 ├─ docs/PLAN.md             system rules, demo story, build phases
 ├─ run_backend.ps1          start the server
-└─ build_bank_apks.ps1      build all 5 bank APKs into dist/
+└─ tools/build_all_apks.cmd  build release APKs of all 9 apps into dist/
 ```
 
 ## Cloud server (main setup)
@@ -83,7 +83,7 @@ installed on the same phone.
 **Demo location:** in Settings you can pretend the phone is in another city, so the police map shows
 transactions spread across India even though all phones are in one room.
 
-Build all five APKs to share by USB or WhatsApp: double-click `build_bank_apks.cmd` → `dist\`.
+Build release APKs of all 9 apps to share by WhatsApp or Drive: double-click `tools\build_all_apks.cmd` → `dist\`.
 
 ## Test data
 
@@ -113,16 +113,20 @@ cd apps\bank_app;  flutter analyze;  flutter test
 - [x] Phase 3 – merchant soundbox app (`apps/merchant_app`), CoinVault crypto exchange (`apps/crypto_app`)
 - [x] Phase 4 – fraud engine (`backend/app/fraud.py`): complaint, auto-trace, hold victim money only, mule list,
   PAN block, court applications + recovery lien, refund; report-fraud / complaints / notices screens in the apps
-
-### Demo story (Phase 4)
-
-`backend\.venv\Scripts\python.exe tools\demo_story.py https://rakshakpay.onrender.com` creates the 8-person story
-from `docs/PLAN.md` on a fresh database, up to the complaint. Then log in to RakshakPay as the victim
-(9000000002, passcode 1111) and report the ₹50,000 payment. Police API login: badge `CYB001`, password `police123`.
 - [x] Phase 5 – Cyber Police app (`apps/police_app`, Android + web at **https://rakshakpay.onrender.com/police**):
   dashboard + hotspot map, complaint map with animated money flow, money-trail tree, court orders, release to victim,
   mule list. Rebuild the web version with `tools\build_police_web.ps1`, then commit `backend/police_web`.
 - [x] Phase 6 – bank officer mode: in any bank app tap **Bank staff login** (staff ID `SAHY001`, `GANG001`, `KAVR001`,
   `NARM001` or `GODA001`, password `officer123`) → find a flagged customer → re-KYC → statement → recommendation;
   the police decide in the Cyber Police app's **Verifications** tab (innocent / tricked / involved)
-- [ ] Phase 7 – demo polish
+- [x] Phase 7 – demo polish: **Demo reset** button in the Cyber Police app (wipes the server and replays the
+  8-person story, optionally with the complaint), release APKs of all 9 apps (`tools\build_all_apks.cmd` → `dist\`),
+  and the presentation script **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**
+- [ ] Later – fake-complaint protection (complaint confidence score), hotspot forecasting (ML)
+
+## Demo
+
+Follow **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**. Before each run: open https://rakshakpay.onrender.com/police,
+log in (`CYB001` / `police123`) and tap **Demo reset**. The same story can also be loaded from the laptop with
+`backend\.venv\Scripts\python.exe tools\demo_story.py <server>` on an empty database; the story itself is in
+`backend/app/demo_story.py`.
