@@ -249,6 +249,24 @@ class PinRequest(BaseModel):
     pin: str
 
 
+class ChangePinRequest(BaseModel):
+    current: str
+    new: str
+
+
+@router.post("/pin")
+def change_pin(req: ChangePinRequest, user: CryptoUser = Depends(current_crypto_user), db: Session = Depends(get_db)):
+    if not verify_secret(req.current, user.pin_hash):
+        raise HTTPException(401, "Current PIN is wrong")
+    if not re.fullmatch(r"\d{4}", req.new):
+        raise HTTPException(400, "New PIN must be exactly 4 digits")
+    if req.new == req.current:
+        raise HTTPException(400, "The new one must be different from the current one")
+    user.pin_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": "CoinVault PIN changed"}
+
+
 @router.post("/unlock")
 def unlock(req: PinRequest, user: CryptoUser = Depends(current_crypto_user)):
     if not verify_secret(req.pin, user.pin_hash):

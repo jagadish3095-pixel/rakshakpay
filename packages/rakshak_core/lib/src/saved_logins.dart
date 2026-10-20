@@ -33,6 +33,15 @@ class SavedLogins {
     await _write([login, ...list]);
   }
 
+  /// After a password/passcode change, keep the one-tap login working.
+  Future<void> updatePassword(String loginId, String password) async {
+    final list = all();
+    final i = list.indexWhere((l) => l.loginId == loginId);
+    if (i < 0) return;
+    list[i] = SavedLogin(loginId, password, list[i].name);
+    await _write(list);
+  }
+
   Future<void> remove(String loginId) async {
     await _write(all()..removeWhere((l) => l.loginId == loginId));
   }

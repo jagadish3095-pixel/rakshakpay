@@ -8,6 +8,7 @@ import 'atm_screen.dart';
 import 'card_screen.dart';
 import 'passbook_screen.dart';
 import 'profile_screen.dart';
+import 'security_screen.dart';
 import 'transfer_screen.dart';
 import 'welcome_screen.dart';
 
@@ -112,9 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (v) => switch (v) {
               'settings' => _open(SettingsScreen(api: api, location: location)),
               'deposit' => _demoDeposit(),
+              'security' => _customer == null ? null : _open(SecurityScreen(customer: _customer!)),
               _ => _logout(),
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(value: 'security', child: Text('Security (password, MPIN, ATM PIN)')),
               PopupMenuItem(value: 'deposit', child: Text('Demo: deposit cash')),
               PopupMenuItem(value: 'settings', child: Text('Settings')),
               PopupMenuItem(value: 'logout', child: Text('Logout')),

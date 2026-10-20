@@ -98,8 +98,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions: [
           IconButton(tooltip: 'History', icon: const Icon(Icons.receipt_long), onPressed: () => _open(const HistoryScreen())),
           PopupMenuButton<String>(
-            onSelected: (v) => v == 'settings' ? _open(SettingsScreen(api: api, location: location)) : _logout(),
+            onSelected: (v) => switch (v) {
+              'settings' => _open(SettingsScreen(api: api, location: location)),
+              'pin' => _open(ChangeSecretScreen(
+                  title: 'Change CoinVault PIN',
+                  what: 'PIN',
+                  submit: (current, next) async {
+                    await api.post('/api/crypto/pin', {'current': current, 'new': next});
+                    if (_profile != null) await savedLogins.updatePassword(_profile!.mobile, next);
+                  },
+                )),
+              _ => _logout(),
+            },
             itemBuilder: (_) => const [
+              PopupMenuItem(value: 'pin', child: Text('Change PIN')),
               PopupMenuItem(value: 'settings', child: Text('Settings')),
               PopupMenuItem(value: 'logout', child: Text('Log out')),
             ],

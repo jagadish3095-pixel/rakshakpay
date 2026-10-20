@@ -19,6 +19,7 @@ from ..out import mask, mask_name
 from ..realtime import manager
 from ..security import current_upi_user, hash_secret, new_token, verify_secret
 from . import crypto
+from .accounts import check_new_secret
 from .payments import LocationIn, ensure_can_debit
 
 router = APIRouter(prefix="/api/upi", tags=["upi"])
@@ -109,6 +110,47 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me")
 def me(user: UpiUser = Depends(current_upi_user)):
     return _user_out(user)
+
+
+class ChangePasscodeRequest(BaseModel):
+    current: str
+    new: str
+
+
+@router.post("/passcode")
+def change_passcode(req: ChangePasscodeRequest, user: UpiUser = Depends(current_upi_user),
+                    db: Session = Depends(get_db)):
+    if not verify_secret(req.current, user.passcode_hash):
+        raise HTTPException(401, "Current passcode is wrong")
+    check_new_secret(req.current, req.new, digits=4)
+    user.passcode_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": "App passcode changed"}
+
+
+class UpiPinRequest(BaseModel):
+    new: str
+    current: str | None = None  # change with the current UPI PIN ...
+    card_last6: str | None = None  # ... or reset ("forgot UPI PIN") with the debit card
+    card_expiry: str | None = None
+
+
+@router.post("/vpas/{address}/pin")
+def change_upi_pin(address: str, req: UpiPinRequest, user: UpiUser = Depends(current_upi_user),
+                   db: Session = Depends(get_db)):
+    vpa = _own_vpa(user, address)
+    if req.current is not None:
+        if not verify_secret(req.current, vpa.upi_pin_hash):
+            raise HTTPException(401, "Current UPI PIN is wrong")
+        check_new_secret(req.current, req.new, digits=4)
+    else:
+        acc = vpa.account
+        if acc.card_no[-6:] != req.card_last6 or acc.card_expiry != req.card_expiry:
+            raise HTTPException(400, "Debit card details do not match")
+        check_new_secret("", req.new, digits=4)
+    vpa.upi_pin_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": f"UPI PIN for {vpa.address} changed"}
 
 
 class UnlockRequest(BaseModel):

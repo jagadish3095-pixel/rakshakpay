@@ -168,7 +168,7 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
             controller: _expiry,
             maxLength: 5,
             keyboardType: TextInputType.number,
-            inputFormatters: [_ExpiryFormatter()],
+            inputFormatters: [ExpiryFormatter()],
             decoration: const InputDecoration(labelText: 'Expiry (valid thru)', hintText: 'MM/YY'),
             validator: (v) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(v ?? '') ? null : 'Format MM/YY',
           ),
@@ -200,14 +200,4 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
           TextButton(onPressed: () => setState(() => _account = null), child: const Text('Back')),
         ]),
       );
-}
-
-/// Types the "/" in MM/YY automatically.
-class _ExpiryFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final text = digits.length <= 2 ? digits : '${digits.substring(0, 2)}/${digits.substring(2, digits.length.clamp(2, 4))}';
-    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
-  }
 }

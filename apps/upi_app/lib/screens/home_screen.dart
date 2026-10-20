@@ -12,6 +12,7 @@ import 'link_bank_screen.dart';
 import 'my_qr_screen.dart';
 import 'pay_screen.dart';
 import 'scan_screen.dart';
+import 'security_screen.dart';
 import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -99,8 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => _open(NoticesScreen(api: api, path: '/api/upi/notices')),
           ),
           PopupMenuButton<String>(
-            onSelected: (v) => v == 'settings' ? _open(SettingsScreen(api: api, location: location)) : _logout(),
+            onSelected: (v) => switch (v) {
+              'settings' => _open(SettingsScreen(api: api, location: location)),
+              'security' => _profile == null ? null : _open(SecurityScreen(profile: _profile!)),
+              _ => _logout(),
+            },
             itemBuilder: (_) => const [
+              PopupMenuItem(value: 'security', child: Text('Security (passcode, UPI PIN)')),
               PopupMenuItem(value: 'settings', child: Text('Settings')),
               PopupMenuItem(value: 'logout', child: Text('Log out')),
             ],

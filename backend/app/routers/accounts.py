@@ -231,6 +231,59 @@ def passbook(account_no: str, customer: Customer = Depends(current_customer), db
             "entries": [entry_out(e) for e in entries]}
 
 
+# ---------------------------------------------------------------- changing password / PINs
+
+
+def check_new_secret(old: str, new: str, *, digits: int | None = None, min_len: int = 6) -> None:
+    """Shared rules for every password / PIN change."""
+    if digits is not None and not re.fullmatch(rf"\d{{{digits}}}", new):
+        raise HTTPException(400, f"New PIN must be exactly {digits} digits")
+    if digits is None and len(new) < min_len:
+        raise HTTPException(400, f"New password must have at least {min_len} characters")
+    if new == old:
+        raise HTTPException(400, "The new one must be different from the current one")
+
+
+class ChangeSecretRequest(BaseModel):
+    current: str
+    new: str
+
+
+@router.post("/security/password")
+def change_password(req: ChangeSecretRequest, customer: Customer = Depends(current_customer),
+                    db: Session = Depends(get_db)):
+    if not verify_secret(req.current, customer.password_hash):
+        raise HTTPException(401, "Current password is wrong")
+    check_new_secret(req.current, req.new)
+    customer.password_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": "Login password changed"}
+
+
+@router.post("/accounts/{account_no}/mpin")
+def change_mpin(account_no: str, req: ChangeSecretRequest, customer: Customer = Depends(current_customer),
+                db: Session = Depends(get_db)):
+    account = own_account(db, customer, account_no)
+    if not verify_secret(req.current, account.mpin_hash):
+        raise HTTPException(401, "Current MPIN is wrong")
+    check_new_secret(req.current, req.new, digits=4)
+    account.mpin_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": "MPIN changed"}
+
+
+@router.post("/accounts/{account_no}/card-pin")
+def change_card_pin(account_no: str, req: ChangeSecretRequest, customer: Customer = Depends(current_customer),
+                    db: Session = Depends(get_db)):
+    account = own_account(db, customer, account_no)
+    if not verify_secret(req.current, account.card_pin_hash):
+        raise HTTPException(401, "Current ATM PIN is wrong")
+    check_new_secret(req.current, req.new, digits=4)
+    account.card_pin_hash = hash_secret(req.new)
+    db.commit()
+    return {"message": "ATM / debit card PIN changed"}
+
+
 class CardRequest(BaseModel):
     blocked: bool
 

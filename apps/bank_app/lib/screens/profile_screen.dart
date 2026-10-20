@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
+import 'security_screen.dart';
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.customer});
   final Customer customer;
@@ -17,6 +19,14 @@ class ProfileScreen extends StatelessWidget {
         CircleAvatar(radius: 36, child: Text(customer.fullName[0], style: const TextStyle(fontSize: 32))),
         const SizedBox(height: 8),
         Text(customer.fullName, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => SecurityScreen(customer: customer))),
+            icon: const Icon(Icons.lock_reset),
+            label: const Text('Change password / MPIN / ATM PIN'),
+          ),
+        ),
         const Divider(height: 32),
         row('Customer ID', customer.cif),
         row('Date of birth', formatDate(customer.dob)),
