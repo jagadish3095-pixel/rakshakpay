@@ -182,6 +182,16 @@ class PaySuccessScreen extends StatelessWidget {
             Text(rupees(amount), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
             Text('paid to ${res['payee_name']}', style: const TextStyle(color: Colors.white, fontSize: 18)),
             Text(res['payee_vpa'], style: const TextStyle(color: Colors.white70)),
+            // e.g. CoinVault: "added to your wallet" or "refunded: third-party deposit"
+            if ((res['note'] as String? ?? '').isNotEmpty)
+              Card(
+                color: Colors.white24,
+                margin: const EdgeInsets.only(top: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(res['note'], textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+                ),
+              ),
             const SizedBox(height: 20),
             Card(
               child: Column(children: [

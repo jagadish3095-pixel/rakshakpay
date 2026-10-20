@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
 import '../services.dart';
+import '../upi_link.dart';
 import 'accounts_screen.dart';
 import 'history_screen.dart';
 import 'link_bank_screen.dart';
@@ -32,12 +33,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _refresh(firstLoad: true);
     live.start();
     _liveSub = live.changes.listen((_) => _refresh());
+    pendingUpiLink.addListener(_openPendingLink);
   }
 
   @override
   void dispose() {
     _liveSub?.cancel();
+    pendingUpiLink.removeListener(_openPendingLink);
     super.dispose();
+  }
+
+  /// Another app (e.g. CoinVault) asked us to pay: open the Pay screen pre-filled.
+  void _openPendingLink() {
+    final link = pendingUpiLink.value;
+    final profile = _profile;
+    if (link == null || profile == null || profile.vpas.isEmpty || !mounted) return;
+    pendingUpiLink.value = null;
+    _open(PayScreen(profile: profile, to: link.vpa, amountPaise: link.amountPaise));
   }
 
   Future<void> _refresh({bool firstLoad = false}) async {
@@ -55,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _recent = history.take(5).toList();
         _error = null;
       });
+      _openPendingLink();
     } on ApiException catch (e) {
       if (e.statusCode == 401) return _logout();
       if (mounted) setState(() => _error = e);

@@ -4,12 +4,14 @@ import 'package:rakshak_core/rakshak_core.dart';
 import 'screens/lock_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services.dart';
+import 'upi_link.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await api.init();
+  await initUpiLinks(); // payment links from other apps, e.g. CoinVault deposits
   runApp(const UpiApp());
 }
 

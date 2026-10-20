@@ -34,10 +34,23 @@ def draw(size, background, rupee_color):
     return img.resize((size, size), Image.LANCZOS)
 
 
-APPS = {"upi_app": (INDIGO, SAFFRON), "merchant_app": (SAFFRON, INDIGO)}
+def draw_coinvault(size):
+    """CoinVault: gold hexagon with a C on a dark background."""
+    big = size * 4
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((0, 0, big - 1, big - 1), radius=big // 5, fill="#0B1418")
+    d.regular_polygon((big / 2, big / 2, big * 0.38), n_sides=6, rotation=30, fill="#F5B301")
+    d.text((big / 2, big / 2), "C", fill="#0B1418", font=font(int(big * .42)), anchor="mm")
+    return img.resize((size, size), Image.LANCZOS)
 
-for app, (background, rupee_color) in APPS.items():
+
+APPS = {"upi_app": lambda px: draw(px, INDIGO, SAFFRON),
+        "merchant_app": lambda px: draw(px, SAFFRON, INDIGO),
+        "crypto_app": draw_coinvault}
+
+for app, painter in APPS.items():
     res = ROOT / "apps" / app / "android" / "app" / "src" / "main" / "res"
     for density, px in SIZES.items():
-        draw(px, background, rupee_color).save(res / f"mipmap-{density}" / "ic_launcher.png")
+        painter(px).save(res / f"mipmap-{density}" / "ic_launcher.png")
     print("icon written for", app)
