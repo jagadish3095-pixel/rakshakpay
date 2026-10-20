@@ -1,4 +1,6 @@
 """Cyber Police / I4C view: complaints, money trails with GPS, court orders, refunds, mule list."""
+import math
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
@@ -10,6 +12,7 @@ from ..models import (Account, Bank, Complaint, CourtOrder, PoliceOfficer, Polic
                       TrailNode)
 from ..realtime import manager
 from ..security import hash_secret, new_token, verify_secret
+from ..seed_data import CITIES
 from .complaints import complaint_out
 
 router = APIRouter(prefix="/api/police", tags=["police"])
@@ -117,12 +120,50 @@ def _totals(c: Complaint, orders: list[CourtOrder]) -> dict:
 # ---------------------------------------------------------------- endpoints
 
 
+def _nearest_city(lat: float, lng: float) -> str | None:
+    best, best_km = None, 150.0  # ignore points far from every known city
+    for name, (_state, clat, clng) in CITIES.items():
+        km = 6371 * 2 * math.asin(math.sqrt(
+            math.sin(math.radians(clat - lat) / 2) ** 2
+            + math.cos(math.radians(lat)) * math.cos(math.radians(clat)) * math.sin(math.radians(clng - lng) / 2) ** 2))
+        if km < best_km:
+            best, best_km = name, km
+    return best
+
+
+def _hotspots(db: Session, nodes: list[TrailNode], atm_edges: list[TrailEdge]) -> list[dict]:
+    """Cities where mules operate (where they forwarded money from) and where cash was withdrawn."""
+    spots: dict[str, dict] = {}
+
+    def spot(city: str) -> dict:
+        state, lat, lng = CITIES[city]
+        return spots.setdefault(city, {"city": city, "state": state, "lat": lat, "lng": lng,
+                                       "mules": 0, "amount": 0, "cashouts": 0})
+
+    for n in nodes:
+        if n.role != "MULE":
+            continue
+        first_out = (db.query(TrailEdge).join(TrailEdge.txn)
+                     .filter(TrailEdge.complaint_id == n.complaint_id, TrailEdge.from_account == n.account_no,
+                             Transaction.lat.isnot(None)).order_by(TrailEdge.id).first())
+        lat, lng = (first_out.txn.lat, first_out.txn.lng) if first_out else (n.account.branch.lat, n.account.branch.lng)
+        if city := _nearest_city(lat, lng):
+            s = spot(city)
+            s["mules"] += 1
+            s["amount"] += n.received
+    for e in atm_edges:
+        if e.txn.lat is not None and (city := _nearest_city(e.txn.lat, e.txn.lng)):
+            spot(city)["cashouts"] += 1
+    return sorted(spots.values(), key=lambda s: (s["mules"] + s["cashouts"], s["amount"]), reverse=True)
+
+
 @router.get("/dashboard")
 def dashboard(_o: PoliceOfficer = Depends(current_officer), db: Session = Depends(get_db)):
     complaints = db.query(Complaint).all()
     nodes = db.query(TrailNode).all()
     atm_edges = db.query(TrailEdge).filter_by(kind="ATM").all()
     return {
+        "hotspots": _hotspots(db, nodes, atm_edges),
         "complaints": len(complaints),
         "reported_amount": sum(c.amount for c in complaints),
         "held": sum(n.held for n in nodes),

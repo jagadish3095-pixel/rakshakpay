@@ -5,6 +5,9 @@ accounts changes, so the passbook and balance refresh instantly.
 """
 from fastapi import WebSocket
 
+# Police dashboards watch this special key and hear about every change.
+ALL = "*"
+
 
 class ConnectionManager:
     def __init__(self) -> None:
@@ -21,7 +24,7 @@ class ConnectionManager:
 
     async def account_changed(self, *account_nos: str | None) -> None:
         for no in filter(None, account_nos):
-            for ws in list(self._watchers.get(no, ())):
+            for ws in list(self._watchers.get(no, ())) + list(self._watchers.get(ALL, ())):
                 try:
                     await ws.send_json({"type": "account_changed", "account_no": no})
                 except Exception:

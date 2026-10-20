@@ -5,14 +5,16 @@ Run from the backend folder:
 Then open http://localhost:8000/docs to try every API in the browser.
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .db import Base, SessionLocal, engine
-from .models import Account, CryptoSession, CryptoUser, UpiSession, Vpa
+from .models import Account, CryptoSession, CryptoUser, PoliceSession, UpiSession, Vpa
 from .models import Session as LoginSession
-from .realtime import manager
+from .realtime import ALL, manager
 from .routers import accounts, complaints, crypto, demo, meta, payments, police, upi
 from .seed_data import seed
 
@@ -57,6 +59,8 @@ def _watched_accounts(token: str) -> list[str] | None:
         if cs := db.get(CryptoSession, token):
             # Deposits and withdrawals move money in the user's own bank account.
             return [db.get(CryptoUser, cs.crypto_user_id).bank_account_no]
+        if db.get(PoliceSession, token):
+            return [ALL]  # police dashboards refresh on every change
     return None
 
 
@@ -75,3 +79,10 @@ async def live_updates(ws: WebSocket, token: str = ""):
             await ws.receive_text()  # keep-alive pings from the app
     except WebSocketDisconnect:
         manager.forget(ws)
+
+
+# The Cyber Police app's web version (built by tools/build_police_web.ps1) is served at /police,
+# so any laptop can open https://<server>/police without a separate website host.
+POLICE_WEB = Path(__file__).resolve().parent.parent / "police_web"
+if POLICE_WEB.is_dir():
+    app.mount("/police", StaticFiles(directory=POLICE_WEB, html=True), name="police_web")

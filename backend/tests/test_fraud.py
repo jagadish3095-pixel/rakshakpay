@@ -155,6 +155,14 @@ def test_eight_person_story(client):
     assert {m["holder"] for m in mules} >= {"Pankaj One", "Prem Eight"}
     dash = client.get("/api/police/dashboard", headers=ph).json()
     assert dash["complaints"] == 1 and dash["recovered"] == got
+    # 7 mules, grouped by the city they operated from (here: their home branches)
+    assert sum(s["mules"] for s in dash["hotspots"]) == 7
+    assert all({"city", "lat", "lng", "amount"} <= set(s) for s in dash["hotspots"])
+
+    # police dashboards hear about every account change
+    with client.websocket_connect(f"/ws?token={pol['token']}") as ws:
+        p2.pay(p8, 1, acknowledge_warning=True)
+        assert ws.receive_json()["type"] == "account_changed"
 
 
 def test_complaint_rules(client):
