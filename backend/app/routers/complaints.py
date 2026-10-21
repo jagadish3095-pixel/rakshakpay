@@ -36,7 +36,19 @@ def categories():
     return CATEGORIES
 
 
+def victim_complaint_out(c: Complaint) -> dict:
+    """What the victim sees: acknowledgement and status only. Investigation details
+    (accounts traced, mules, holds) are shown to the police, not to the complainant."""
+    return {
+        "id": c.id, "ack_no": c.ack_no, "date": c.created_at.isoformat(), "amount": c.amount,
+        "category": c.category, "description": c.description, "utr": c.victim_txn.utr,
+        "status": "REFUNDED" if c.status == "REFUNDED" else "UNDER_INVESTIGATION",
+        "recovered": sum(n.released + n.crypto_released for n in c.nodes),
+    }
+
+
 def complaint_out(c: Complaint) -> dict:
+    """Full summary for the police."""
     held = sum(n.held for n in c.nodes)
     recovered = sum(n.released + n.crypto_released for n in c.nodes)
     return {
@@ -71,13 +83,13 @@ async def file_complaint(db: Session, *, accounts: list[str], req: ComplaintRequ
     touched = fraud.trace(db, complaint)  # commits
     await manager.account_changed(*touched)
     db.refresh(complaint)
-    return complaint_out(complaint)
+    return victim_complaint_out(complaint)
 
 
 def _complaints_for(db: Session, accounts: list[str]) -> list[dict]:
     rows = (db.query(Complaint).filter(Complaint.victim_account.in_(accounts))
             .order_by(Complaint.id.desc()).all())
-    return [complaint_out(c) for c in rows]
+    return [victim_complaint_out(c) for c in rows]
 
 
 def _notices_for(db: Session, accounts: list[str]) -> list[dict]:

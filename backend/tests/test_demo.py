@@ -17,13 +17,14 @@ def test_load_story_needs_police_and_plays_the_whole_story(client, monkeypatch):
     assert r.status_code == 200, r.text
     story = r.json()
     assert len(story["people"]) == 9
-    assert story["complaint"]["held"] == 30_000_00 and story["complaint"]["mules"] == 7
+    # the victim's copy has only the acknowledgement and status
+    assert story["complaint"]["status"] == "UNDER_INVESTIGATION" and "held" not in story["complaint"]
 
     # the wipe removed the old login; the returned one works
     assert client.get("/api/police/dashboard", headers=old).status_code == 401
     fresh = {"Authorization": f"Bearer {story['police_token']}"}
     dash = client.get("/api/police/dashboard", headers=fresh).json()
-    assert dash["complaints"] == 1 and dash["mule_accounts"] >= 7
+    assert dash["complaints"] == 1 and dash["mule_accounts"] >= 7 and dash["held"] == 30_000_00
 
     # plain reset (no story) also works with a police login
     assert client.post("/api/demo/reset").status_code == 403

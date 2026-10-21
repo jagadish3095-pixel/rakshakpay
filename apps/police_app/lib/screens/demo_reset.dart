@@ -141,7 +141,7 @@ Future<void> _showLogins(BuildContext context, Map<String, dynamic> story) {
         child: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (story['complaint'] != null)
-              Text('Complaint ${story['complaint']['ack_no']} filed: ${rupees(story['complaint']['held'])} on hold.\n')
+              Text('Complaint ${story['complaint']['ack_no']} filed and traced. Open it in Complaints.\n')
             else
               const Text('Next: on a phone, log in to RakshakPay as Priya (9000000002) and report the ₹50,000 '
                   'payment to Pankaj.\n'),

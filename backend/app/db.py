@@ -7,7 +7,7 @@ survives server restarts.
 import os
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -42,6 +42,21 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 class Base(DeclarativeBase):
     pass
+
+
+# Columns added after the cloud database was first created: (table, column, SQL type and default).
+# create_all() makes new tables but never adds columns to existing ones, so add them here.
+NEW_COLUMNS = [
+    ("court_orders", "kind", "VARCHAR(20) NOT NULL DEFAULT 'RECOVERY'"),
+]
+
+
+def add_missing_columns() -> None:
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, column, ddl in NEW_COLUMNS:
+            if insp.has_table(table) and column not in {c["name"] for c in insp.get_columns(table)}:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
 
 
 def get_db():

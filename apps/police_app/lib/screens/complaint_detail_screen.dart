@@ -36,15 +36,44 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> with Live
   }
 
   Future<void> _release() async {
+    final t = _d!['totals'] as Map<String, dynamic>;
+    final accounts = t['release_now_accounts'] as int, crypto = t['release_now_crypto'] as int;
+    final waitRecovery = t['waiting_court_recovery'] as int, waitCrypto = t['waiting_court_crypto'] as int;
+    Widget line(String label, int amount, {Color? color}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Expanded(child: Text(label)),
+            Text(rupees(amount), style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+          ]),
+        );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Release money to the victim?'),
-        content: const Text('In real life this follows the magistrate\'s refund order. Held amounts, '
-            'court-approved recovery liens (as far as the balance allows) and frozen crypto will be paid to the victim.'),
+        content: SizedBox(
+          width: 460,
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Under the magistrate\'s refund order, this pays:'),
+            const SizedBox(height: 8),
+            line('Held money + approved recovery liens (as far as balances allow)', accounts),
+            line('Frozen crypto with an approved seizure order', crypto),
+            const Divider(),
+            line('Total paid now', accounts + crypto, color: Colors.green.shade700),
+            if (waitRecovery + waitCrypto > 0) ...[
+              const SizedBox(height: 12),
+              const Text('Not paid yet: waiting for court approval (Court orders tab)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              if (waitRecovery > 0) line('Recovery liens (spent / cash / escaped crypto)', waitRecovery, color: Colors.brown),
+              if (waitCrypto > 0) line('Crypto seizure at the exchange', waitCrypto, color: Colors.brown),
+            ],
+          ]),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Release')),
+          FilledButton(
+            onPressed: accounts + crypto > 0 ? () => Navigator.pop(ctx, true) : null,
+            child: const Text('Release'),
+          ),
         ],
       ),
     );
@@ -108,7 +137,8 @@ class _Summary extends StatelessWidget {
     final t = d['totals'] as Map<String, dynamic>;
     final victim = (d['nodes'] as List).cast<Map<String, dynamic>>().firstWhere((n) => n['role'] == 'VICTIM');
     String r(String k) => rupees(t[k] as int, decimals: false);
-    final releasable = (t['held'] as int) + (t['court_approved'] as int) + (t['crypto_frozen'] as int) - (t['recovered'] as int);
+    // Only what can be paid right now (pending court orders are excluded).
+    final releasable = (t['release_now_accounts'] as int) + (t['release_now_crypto'] as int);
     return ListView(padding: const EdgeInsets.all(16), children: [
       Card(
         child: ListTile(
@@ -137,7 +167,9 @@ class _Summary extends StatelessWidget {
         style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700, padding: const EdgeInsets.all(16)),
         onPressed: onRelease,
         icon: const Icon(Icons.currency_rupee),
-        label: Text('Release to victim (court refund order)${releasable > 0 ? ' – up to ${rupees(releasable, decimals: false)}' : ''}'),
+        label: Text(releasable > 0
+            ? 'Release to victim (court refund order) – ${rupees(releasable, decimals: false)} now'
+            : 'Release to victim – nothing to release now'),
       ),
       const SizedBox(height: 8),
       const Text('Tip: the Map tab has a Play button that replays the money moving between accounts.',

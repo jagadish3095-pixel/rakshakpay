@@ -82,8 +82,11 @@ def test_eight_person_story(client):
                                                             "description": "Caller said my KYC expired"})
     assert r.status_code == 200, r.text
     c = r.json()
-    assert c["ack_no"].startswith("1930-") and c["status"] == "TRACED"
-    assert c["held"] == 30_000_00  # P3 10k + P4 10k + P5 5k + P6 5k
+    # the victim gets the acknowledgement and status only, no investigation details
+    assert c["ack_no"].startswith("1930-") and c["status"] == "UNDER_INVESTIGATION"
+    assert not {"held", "mules", "accounts_traced"} & set(c)
+    victim_notice = client.get("/api/upi/notices", headers=v).json()[0]["body"]
+    assert "on hold" not in victim_notice and "accounts" not in victim_notice
     assert client.post("/api/upi/complaints", headers=v, json={"utr": scam["utr"], "category": cats[1]}).status_code == 409
 
     # --- holds: only the victim's money, own money untouched
@@ -119,6 +122,7 @@ def test_eight_person_story(client):
                                                  "password": DEMO_OFFICER["password"]}).json()
     ph = {"Authorization": f"Bearer {pol['token']}"}
     d = client.get(f"/api/police/complaints/{c['id']}", headers=ph).json()
+    assert d["held"] == 30_000_00  # P3 10k + P4 10k + P5 5k + P6 5k (police see the details)
     roles = {n["holder"]: n["role"] for n in d["nodes"]}
     assert roles["Lakshmi Devi"] == "MERCHANT" and roles["Priya Sharma"] == "VICTIM"
     assert d["totals"]["spent_merchant"] == 10_000_00
@@ -129,10 +133,13 @@ def test_eight_person_story(client):
     p8_node = next(n for n in d["nodes"] if n["holder"] == "Prem Eight")
     assert p8_node["spent_merchant"] == 10_000_00
 
-    orders = {o["holder"]: o for o in d["court_orders"]}
-    assert set(orders) == {"Prem Eight", "Pradeep Seven"}
-    assert orders["Prem Eight"]["amount"] == 10_000_00
-    assert "Section 107" in orders["Prem Eight"]["application_text"]
+    orders = {(o["holder"], o["kind"]): o for o in d["court_orders"]}
+    assert set(orders) == {("Prem Eight", "RECOVERY"), ("Pradeep Seven", "RECOVERY"), ("Pradeep Seven", "CRYPTO_SEIZURE")}
+    assert orders[("Prem Eight", "RECOVERY")]["amount"] == 10_000_00
+    assert "Section 107" in orders[("Prem Eight", "RECOVERY")]["application_text"]
+    seizure = orders[("Pradeep Seven", "CRYPTO_SEIZURE")]
+    assert abs(seizure["amount"] - 5_000_00) <= ROUND * 100
+    orders = {"Prem Eight": orders[("Prem Eight", "RECOVERY")]}
 
     # court approves -> P8's available balance goes negative
     client.post(f"/api/police/court-orders/{orders['Prem Eight']['id']}/approve", headers=ph)
@@ -141,15 +148,25 @@ def test_eight_person_story(client):
     # money later arriving in P8's account is captured (a relative repays on P8's behalf)
     p2.pay(p8, 3_000, acknowledge_warning=True)
 
-    # release everything to the victim
+    # what release would pay now: held + captured, but NOT the crypto (its court order is still pending)
+    t = client.get(f"/api/police/complaints/{c['id']}", headers=ph).json()["totals"]
+    assert t["release_now_accounts"] == 30_000_00 + 3_000_00 and t["release_now_crypto"] == 0
+    assert t["waiting_court_crypto"] == seizure["amount"]
+
     before = p2.account()["balance"]
     rel = client.post(f"/api/police/complaints/{c['id']}/release", headers=ph).json()
     got = p2.account()["balance"] - before
-    assert got == rel["released"]
-    # 30,000 held + 3,000 captured by P8's court-approved lien + ~5,000 crypto seized at the exchange
-    assert abs(got - (30_000_00 + 3_000_00 + 5_000_00)) <= ROUND * 100
+    assert got == rel["released"] == 30_000_00 + 3_000_00  # no crypto without the court
     assert p3.account()["lien_amount"] == 0
     assert p8.account()["available_balance"] == -7_000_00  # still owes the rest
+
+    # the court approves the crypto seizure -> the next release sells it for the victim
+    client.post(f"/api/police/court-orders/{seizure['id']}/approve", headers=ph)
+    assert client.get(f"/api/police/complaints/{c['id']}", headers=ph).json()["totals"]["release_now_crypto"] > 0
+    rel2 = client.post(f"/api/police/complaints/{c['id']}/release", headers=ph).json()
+    assert abs(rel2["released"] - 5_000_00) <= ROUND * 100
+    got += rel2["released"]
+    assert client.get("/api/upi/complaints", headers=v).json()[0]["status"] == "REFUNDED"
 
     mules = client.get("/api/police/mules", headers=ph).json()
     assert {m["holder"] for m in mules} >= {"Pankaj One", "Prem Eight"}

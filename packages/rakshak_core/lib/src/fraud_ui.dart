@@ -137,8 +137,9 @@ class _ComplaintFiledScreen extends StatelessWidget {
         const SizedBox(height: 16),
         ComplaintCard(c),
         const SizedBox(height: 12),
-        const Text('Your money was traced within seconds. Amounts on hold are returned to you after the court\'s '
-            'order. Keep this acknowledgement number.', textAlign: TextAlign.center),
+        const Text('Your complaint has been sent to the cyber police and is under investigation. '
+            'Keep this acknowledgement number. You will get a notice in this app when money is returned '
+            'to your account.', textAlign: TextAlign.center),
         const SizedBox(height: 16),
         FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
       ]),
@@ -146,7 +147,8 @@ class _ComplaintFiledScreen extends StatelessWidget {
   }
 }
 
-/// Summary of one complaint: amount, accounts traced, money on hold, money recovered.
+/// What the complainant sees about their complaint: acknowledgement, status and any money returned.
+/// (Investigation details such as traced accounts are only shown to the police.)
 class ComplaintCard extends StatelessWidget {
   const ComplaintCard(this.c, {super.key});
   final Map<String, dynamic> c;
@@ -168,16 +170,16 @@ class ComplaintCard extends StatelessWidget {
           Row(children: [
             Expanded(child: Text(c['ack_no'], style: const TextStyle(fontWeight: FontWeight.bold))),
             Chip(
-              label: Text(switch (status) { 'TRACED' => 'Traced', 'REFUNDED' => 'Refunded', _ => status }),
+              label: Text(status == 'REFUNDED' ? 'Money returned' : 'Under investigation'),
               backgroundColor: status == 'REFUNDED' ? Colors.green.shade100 : Colors.blue.shade100,
             ),
           ]),
           Text('${c['category']} • ${formatDateTime(c['date'])}', style: const TextStyle(fontSize: 12)),
           const Divider(),
           row('Amount reported', rupees(c['amount'])),
-          row('Accounts traced', '${c['accounts_traced']} (${c['mules']} suspected mules)'),
-          row('On hold for you', rupees(c['held']), color: Colors.orange.shade800),
-          row('Returned to you', rupees(c['recovered']), color: Colors.green.shade700),
+          row('Payment UTR', c['utr']),
+          if ((c['recovered'] as int) > 0)
+            row('Returned to you', rupees(c['recovered']), color: Colors.green.shade700),
         ]),
       ),
     );

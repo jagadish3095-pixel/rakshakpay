@@ -97,7 +97,7 @@ def _edge_out(e: TrailEdge) -> dict:
 
 
 def _order_out(db: Session, o: CourtOrder) -> dict:
-    return {"id": o.id, "complaint_ack": o.complaint.ack_no, "account_no": o.account_no,
+    return {"id": o.id, "kind": o.kind, "complaint_ack": o.complaint.ack_no, "account_no": o.account_no,
             "holder": o.account.customer.full_name, "bank": db.get(Bank, o.account.bank_code).name,
             "amount": o.amount, "reason": o.reason, "status": o.status, "application_text": o.application_text,
             "date": o.created_at.isoformat(), "approved_at": o.approved_at.isoformat() if o.approved_at else None,
@@ -106,7 +106,20 @@ def _order_out(db: Session, o: CourtOrder) -> dict:
 
 def _totals(c: Complaint, orders: list[CourtOrder]) -> dict:
     nodes = c.nodes
+    # What "Release to victim" would pay right now: held money and approved recovery liens (as far as
+    # each account's balance allows) plus approved crypto seizures. Pending court orders are not paid.
+    release_accounts = sum(max(0, min(n.held + n.recovery_approved - n.released, n.account.balance)) for n in nodes)
+    approved_crypto = {o.account_no: 0 for o in orders}
+    for o in orders:
+        if o.kind == "CRYPTO_SEIZURE" and o.status == "APPROVED":
+            approved_crypto[o.account_no] += o.amount
+    release_crypto = sum(max(0, min(n.crypto_frozen, approved_crypto.get(n.account_no, 0)) - n.crypto_released)
+                         for n in nodes)
     return {
+        "release_now_accounts": release_accounts,
+        "release_now_crypto": release_crypto,
+        "waiting_court_recovery": sum(o.amount for o in orders if o.status == "PENDING" and o.kind == "RECOVERY"),
+        "waiting_court_crypto": sum(o.amount for o in orders if o.status == "PENDING" and o.kind == "CRYPTO_SEIZURE"),
         "held": sum(n.held for n in nodes),
         "crypto_frozen": sum(n.crypto_frozen for n in nodes),
         "cashed_out": sum(n.cashed_out for n in nodes),

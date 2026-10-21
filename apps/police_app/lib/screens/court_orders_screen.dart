@@ -58,7 +58,8 @@ class CourtOrderList extends StatelessWidget {
         Card(
           child: ListTile(
             leading: Icon(Icons.gavel, color: o['status'] == 'APPROVED' ? Colors.green : Colors.brown),
-            title: Text('${o['holder']} • ${rupees(o['amount'])}'),
+            title: Text('${o['holder']} • ${rupees(o['amount'])} • '
+                '${o['kind'] == 'CRYPTO_SEIZURE' ? 'Crypto seizure' : 'Recovery lien'}'),
             subtitle: Text('${o['complaint_ack']} • ${o['bank']} A/c ${o['account_no']}\n${o['reason']}'),
             isThreeLine: true,
             trailing: Chip(
@@ -109,7 +110,9 @@ class CourtOrderList extends StatelessWidget {
     try {
       await api.post('/api/police/court-orders/${o['id']}/approve');
       if (context.mounted) {
-        showInfo(context, 'Recovery lien of ${rupees(o['amount'])} placed on ${o['holder']}\'s account');
+        showInfo(context, o['kind'] == 'CRYPTO_SEIZURE'
+            ? 'Seizure approved: up to ${rupees(o['amount'])} of ${o['holder']}\'s frozen crypto can now be released to the victim'
+            : 'Recovery lien of ${rupees(o['amount'])} placed on ${o['holder']}\'s account');
       }
       onChanged();
     } catch (e) {

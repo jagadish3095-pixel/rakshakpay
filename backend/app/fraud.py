@@ -114,11 +114,12 @@ def trace(db: Session, complaint: Complaint) -> set[str]:
     touched |= _flag_mules(db, complaint, nodes)
     _draft_court_orders(db, complaint, nodes)
 
-    held = sum(n.held for n in nodes.values())
+    # The victim gets only the acknowledgement; investigation details are for the police.
     db.add(Notice(account_no=victim_no, kind="COMPLAINT", complaint_id=complaint.id,
                   title=f"Complaint {complaint.ack_no} registered",
-                  body=f"We traced your {rupees(complaint.amount)} through {len(nodes) - 1} accounts. "
-                       f"{rupees(held)} is already on hold and will be returned after verification."))
+                  body=f"Your complaint about {rupees(complaint.amount)} has been registered and sent to the "
+                       "cyber police. Keep this acknowledgement number. You will get a notice here when "
+                       "money is returned to your account."))
     complaint.status = "TRACED"
     complaint.traced_at = datetime.now()
     db.commit()
@@ -231,28 +232,70 @@ def _draft_court_orders(db: Session, complaint: Complaint, nodes: dict[str, Trai
             "account(s), so that incoming funds are retained and remitted to the victim.\n\n"
             "Auto-drafted by the RakshakPay fraud engine; requires the investigating officer's digital signature."
         )
-        db.add(CourtOrder(complaint_id=complaint.id, account_no=acc.account_no, amount=amount,
+        db.add(CourtOrder(complaint_id=complaint.id, account_no=acc.account_no, kind="RECOVERY", amount=amount,
                           reason=reason, application_text=text))
+
+    # Crypto still on the exchange is frozen, but seizing and selling it also needs the court.
+    for n in nodes.values():
+        if n.role != "MULE" or n.crypto_frozen <= 0:
+            continue
+        acc = db.get(Account, n.account_no)
+        reason = f"{rupees(n.crypto_frozen)} of crypto bought with the victim's money is frozen at CoinVault"
+        text = (
+            "IN THE COURT OF THE JUDICIAL MAGISTRATE FIRST CLASS\n"
+            "Application under Section 107 of the Bharatiya Nagarik Suraksha Sanhita, 2023\n"
+            "for attachment and restoration of proceeds of crime held as virtual digital assets\n\n"
+            f"Complaint No.: {complaint.ack_no} ({complaint.category})\n"
+            f"Victim: {victim.customer.full_name}, {db.get(Bank, victim.bank_code).name} A/c {mask(victim.account_no)}\n"
+            f"Respondent: {acc.customer.full_name}, PAN {acc.customer.pan}\n"
+            "Holder of the assets: CoinVault Exchange (KYC-verified wallet of the respondent)\n"
+            f"Value sought: {rupees(n.crypto_frozen)} (at market price when seized)\n\n"
+            f"Grounds: {reason}; the respondent's PAN is blacklisted and the wallet is frozen.\n\n"
+            "Prayer: direct CoinVault to sell the frozen assets up to the above value and remit the proceeds "
+            "to the victim's account.\n\n"
+            "Auto-drafted by the RakshakPay fraud engine; requires the investigating officer's digital signature."
+        )
+        db.add(CourtOrder(complaint_id=complaint.id, account_no=acc.account_no, kind="CRYPTO_SEIZURE",
+                          amount=n.crypto_frozen, reason=reason, application_text=text))
 
 
 def approve_court_order(db: Session, order: CourtOrder, officer_name: str) -> None:
-    """Simulates the magistrate's approval: recovery lien on the account (available balance can go negative)."""
+    """Simulates the magistrate's approval.
+
+    RECOVERY: recovery lien on the account (available balance can go negative).
+    CRYPTO_SEIZURE: the frozen crypto may now be seized and sold for the victim (on release).
+    """
     order.status = "APPROVED"
     order.approved_at = datetime.now()
     order.approved_by = officer_name
-    order.account.lien_amount += order.amount
-    n = db.query(TrailNode).filter_by(complaint_id=order.complaint_id, account_no=order.account_no).first()
-    n.recovery_approved += order.amount
-    db.add(Notice(account_no=order.account_no, kind="RECOVERY", complaint_id=order.complaint_id,
-                  title="Court-approved recovery lien",
-                  body=f"By court order in complaint {order.complaint.ack_no}, a recovery lien of {rupees(order.amount)} "
-                       f"is placed on your account ({order.reason}). Money coming into this account will be "
-                       "used to repay the victim until this amount is recovered."))
+    if order.kind == "CRYPTO_SEIZURE":
+        title = "Court order: frozen crypto to be seized"
+        body = (f"By court order in complaint {order.complaint.ack_no}, crypto worth up to {rupees(order.amount)} "
+                "in your CoinVault wallet will be sold and paid to the victim.")
+    else:
+        order.account.lien_amount += order.amount
+        n = db.query(TrailNode).filter_by(complaint_id=order.complaint_id, account_no=order.account_no).first()
+        n.recovery_approved += order.amount
+        title = "Court-approved recovery lien"
+        body = (f"By court order in complaint {order.complaint.ack_no}, a recovery lien of {rupees(order.amount)} "
+                f"is placed on your account ({order.reason}). Money coming into this account will be "
+                "used to repay the victim until this amount is recovered.")
+    db.add(Notice(account_no=order.account_no, kind="RECOVERY", complaint_id=order.complaint_id, title=title, body=body))
     db.commit()
 
 
+def approved_crypto_seizure(db: Session, complaint_id: int, account_no: str) -> int:
+    """How much frozen crypto the court has allowed to be seized for this account in this complaint."""
+    return sum(o.amount for o in db.query(CourtOrder).filter_by(
+        complaint_id=complaint_id, account_no=account_no, kind="CRYPTO_SEIZURE", status="APPROVED"))
+
+
 def release_to_victim(db: Session, complaint: Complaint) -> tuple[int, set[str]]:
-    """Returns held/recovered money (and frozen crypto) to the victim. Returns (amount, touched accounts)."""
+    """Pays the victim under the court's refund order. Returns (amount, touched accounts).
+
+    Pays only: money held in mule accounts, court-APPROVED recovery liens (as far as the balance
+    allows) and court-APPROVED crypto seizures. Anything still waiting for the court is not paid.
+    """
     victim = db.get(Account, complaint.victim_account)
     total, touched = 0, {victim.account_no}
     for n in complaint.nodes:
@@ -268,7 +311,7 @@ def release_to_victim(db: Session, complaint: Complaint) -> tuple[int, set[str]]
             n.released += amount
             total += amount
             touched.add(acc.account_no)
-        crypto_due = n.crypto_frozen - n.crypto_released
+        crypto_due = min(n.crypto_frozen, approved_crypto_seizure(db, complaint.id, n.account_no)) - n.crypto_released
         if crypto_due > 0:
             seized = _seize_crypto(db, n.account_no, crypto_due)
             if seized > 0:

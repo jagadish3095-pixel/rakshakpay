@@ -353,14 +353,19 @@ class TrailEdge(Base):
 
 
 class CourtOrder(Base):
-    """Auto-drafted application to a magistrate (BNSS s.107) to recover money that was spent,
-    withdrawn as cash or moved out as crypto. Approval adds a recovery lien on the mule's account."""
+    """Auto-drafted application to a magistrate (BNSS s.107).
+
+    RECOVERY       - money spent / withdrawn / sent out as crypto: approval adds a recovery lien on the
+                     mule's account (available balance can go negative).
+    CRYPTO_SEIZURE - crypto still on the exchange: approval lets the police seize and sell it for the victim.
+    """
 
     __tablename__ = "court_orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     complaint_id: Mapped[int] = mapped_column(ForeignKey("complaints.id"), index=True)
     account_no: Mapped[str] = mapped_column(ForeignKey("accounts.account_no"))
+    kind: Mapped[str] = mapped_column(String(20), default="RECOVERY")  # RECOVERY | CRYPTO_SEIZURE
     amount: Mapped[int] = mapped_column(BigInteger)
     reason: Mapped[str] = mapped_column(String(200))
     application_text: Mapped[str] = mapped_column(Text)

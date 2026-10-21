@@ -11,7 +11,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .db import Base, SessionLocal, engine
+from .db import Base, SessionLocal, add_missing_columns, engine
 from .models import Account, CryptoSession, CryptoUser, PoliceSession, UpiSession, Vpa
 from .models import Session as LoginSession
 from .realtime import ALL, manager
@@ -22,6 +22,7 @@ from .seed_data import seed
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(engine)
+    add_missing_columns()
     with SessionLocal() as db:
         seed(db)
         crypto.ensure_exchange(db)
