@@ -20,7 +20,7 @@ from ..realtime import manager
 from ..security import current_upi_user, hash_secret, new_token, verify_secret
 from . import crypto
 from .accounts import check_new_secret
-from .payments import LocationIn, ensure_can_debit
+from .payments import LocationIn, ensure_can_debit, require_location
 
 router = APIRouter(prefix="/api/upi", tags=["upi"])
 
@@ -280,6 +280,7 @@ class PayRequest(BaseModel):
 @router.post("/pay")
 async def pay(req: PayRequest, user: UpiUser = Depends(current_upi_user), db: Session = Depends(get_db)):
     payer = _own_vpa(user, req.from_vpa)
+    location = require_location(req.location)
     if not verify_secret(req.upi_pin, payer.upi_pin_hash):
         raise HTTPException(401, "Incorrect UPI PIN")
     ensure_can_debit(payer.account)
@@ -294,7 +295,7 @@ async def pay(req: PayRequest, user: UpiUser = Depends(current_upi_user), db: Se
         db, amount=req.amount, channel="UPI", debit=payer.account, credit=payee.account, remark=req.remark,
         narration_dr=f"UPI/DR/{payee_name.upper()}/{payee.address}",
         narration_cr=f"UPI/CR/{payer.account.customer.full_name.upper()}/{payer.address}",
-        location=req.location.to_location(),
+        location=location,
     )
     db.add(UpiTransfer(txn_id=txn.id, payer_vpa=payer.address, payee_vpa=payee.address))
     db.commit()

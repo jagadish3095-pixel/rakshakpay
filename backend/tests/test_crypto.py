@@ -2,7 +2,7 @@
 from app.db import SessionLocal
 from app.models import PanBlacklist
 from app.routers.crypto import exchange_account
-from helpers import login, open_account
+from helpers import HERE, login, open_account
 from test_upi import bank_account, link, upi_register
 
 EXCHANGE_VPA = "coinvault@godavari"
@@ -31,7 +31,7 @@ def test_kyc_deposit_trade_withdraw(client):
     s = upi_register(client, "9988776655", "Sunil Verma")
     link(client, s, s_acc)
     dep = client.post("/api/upi/pay", headers=s, json={"from_vpa": "sunil6655@kaveri", "to": EXCHANGE_VPA,
-                                                      "amount": 10_000_00, "upi_pin": "2580"}).json()
+                                                      "amount": 10_000_00, "upi_pin": "2580", "location": HERE}).json()
     assert "added to your CoinVault wallet" in dep["note"]
     assert client.get("/api/crypto/me", headers=cv).json()["inr"] == 10_000_00
 
@@ -39,7 +39,7 @@ def test_kyc_deposit_trade_withdraw(client):
     rv = upi_register(client, "9123456780", "Ravi Kumar")
     link(client, rv, r_acc)
     ref = client.post("/api/upi/pay", headers=rv, json={"from_vpa": "ravi6780@ganga", "to": EXCHANGE_VPA,
-                                                       "amount": 5_000_00, "upi_pin": "2580"}).json()
+                                                       "amount": 5_000_00, "upi_pin": "2580", "location": HERE}).json()
     assert "refunded" in ref["note"]
     ravi_book = client.get(f"/api/accounts/{r_acc['account_no']}/passbook", headers=login(client, "GANG", ravi["cif"])).json()
     assert ravi_book["account"]["balance"] == 20_000_00
@@ -83,7 +83,7 @@ def test_bank_transfer_deposit_and_pan_blacklist(client):
         ex = exchange_account(db)
         ex_no, ex_ifsc = ex.account_no, ex.branch.ifsc
     t = client.post("/api/transfers", headers=login(client, "KAVR", sunil["cif"]), json={
-        "from_account": s_acc["account_no"], "to_account": ex_no, "to_ifsc": ex_ifsc, "amount": 2_000_00, "mpin": "1234"})
+        "from_account": s_acc["account_no"], "to_account": ex_no, "to_ifsc": ex_ifsc, "amount": 2_000_00, "mpin": "1234", "location": HERE})
     assert "added to your CoinVault wallet" in t.json()["note"]
     assert client.get("/api/crypto/me", headers=cv).json()["inr"] == 2_000_00
 

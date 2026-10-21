@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'app_settings.dart';
 import 'location.dart';
 import 'money.dart';
 import 'widgets.dart';
@@ -45,8 +46,8 @@ class _ReportFraudScreenState extends State<ReportFraudScreen> {
   }
 
   Future<void> _submit() async {
-    if (_category == null) return showError(context, 'Choose what happened');
-    if (!_confirm) return showError(context, 'Please confirm the declaration');
+    if (_category == null) return showError(context, tr('Choose what happened'));
+    if (!_confirm) return showError(context, tr('Please confirm the declaration'));
     setState(() => _busy = true);
     try {
       final loc = await widget.location.current();
@@ -68,26 +69,27 @@ class _ReportFraudScreenState extends State<ReportFraudScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Report fraud (1930)')),
+      appBar: AppBar(title: Text(tr('Report fraud (1930)'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Card(
-          color: Colors.red.shade50,
+          color: softBg(context, Colors.red),
           child: ListTile(
             leading: const Icon(Icons.report, color: Colors.red),
-            title: Text('${rupees(widget.amount)} paid to ${widget.paidTo}'),
-            subtitle: Text('UTR ${widget.utr}\n${formatDateTime(widget.date)}'),
+            title: Text(tr('{amount} paid to {name}', {'amount': rupees(widget.amount), 'name': widget.paidTo})),
+            subtitle: Text('${tr('UTR')} ${widget.utr}\n${formatDateTime(widget.date)}'),
             isThreeLine: true,
           ),
         ),
         const SizedBox(height: 8),
-        const Text('Report as soon as possible: money that is still in the fraudster\'s accounts can be '
-            'held only before it is withdrawn.'),
+        Text(tr('Report as soon as possible: money that is still in the fraudster\'s accounts can be '
+            'held only before it is withdrawn.')),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           initialValue: _category,
           isExpanded: true,
-          decoration: const InputDecoration(labelText: 'What happened?'),
-          items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
+          decoration: InputDecoration(labelText: tr('What happened?')),
+          // The category list comes from the server in English; only the label is translated.
+          items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(tr(c)))],
           onChanged: (v) => setState(() => _category = v),
         ),
         const SizedBox(height: 12),
@@ -95,9 +97,9 @@ class _ReportFraudScreenState extends State<ReportFraudScreen> {
           controller: _description,
           maxLines: 4,
           maxLength: 1000,
-          decoration: const InputDecoration(
-            labelText: 'Describe what happened (optional)',
-            hintText: 'e.g. A caller said my KYC expired and asked me to pay to unblock my account',
+          decoration: InputDecoration(
+            labelText: tr('Describe what happened (optional)'),
+            hintText: tr('e.g. A caller said my KYC expired and asked me to pay to unblock my account'),
           ),
         ),
         CheckboxListTile(
@@ -105,15 +107,15 @@ class _ReportFraudScreenState extends State<ReportFraudScreen> {
           controlAffinity: ListTileControlAffinity.leading,
           value: _confirm,
           onChanged: (v) => setState(() => _confirm = v!),
-          title: const Text('I declare this information is true. A false complaint is punishable '
-              '(BNS sections 217 and 248).'),
+          title: Text(tr('I declare this information is true. A false complaint is punishable '
+              '(BNS sections 217 and 248).')),
         ),
         const SizedBox(height: 8),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700, padding: const EdgeInsets.all(16)),
           onPressed: _busy ? null : _submit,
           icon: const Icon(Icons.send),
-          label: Text(_busy ? 'Tracing your money…' : 'Submit complaint'),
+          label: Text(_busy ? tr('Tracing your money…') : tr('Submit complaint')),
         ),
       ]),
     );
@@ -127,21 +129,23 @@ class _ComplaintFiledScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Complaint registered'), automaticallyImplyLeading: false),
+      appBar: AppBar(title: Text(tr('Complaint registered')), automaticallyImplyLeading: false),
       body: ListView(padding: const EdgeInsets.all(20), children: [
         const Icon(Icons.verified_user, size: 72, color: Colors.green),
         const SizedBox(height: 8),
-        const Text('Acknowledgement number', textAlign: TextAlign.center),
+        Text(tr('Acknowledgement number'), textAlign: TextAlign.center),
         SelectableText(c['ack_no'], textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         ComplaintCard(c),
         const SizedBox(height: 12),
-        const Text('Your complaint has been sent to the cyber police and is under investigation. '
-            'Keep this acknowledgement number. You will get a notice in this app when money is returned '
-            'to your account.', textAlign: TextAlign.center),
+        Text(
+            tr('Your complaint has been sent to the cyber police and is under investigation. '
+                'Keep this acknowledgement number. You will get a notice in this app when money is returned '
+                'to your account.'),
+            textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
+        FilledButton(onPressed: () => Navigator.pop(context), child: Text(tr('Done'))),
       ]),
     );
   }
@@ -170,16 +174,16 @@ class ComplaintCard extends StatelessWidget {
           Row(children: [
             Expanded(child: Text(c['ack_no'], style: const TextStyle(fontWeight: FontWeight.bold))),
             Chip(
-              label: Text(status == 'REFUNDED' ? 'Money returned' : 'Under investigation'),
-              backgroundColor: status == 'REFUNDED' ? Colors.green.shade100 : Colors.blue.shade100,
+              label: Text(status == 'REFUNDED' ? tr('Money returned') : tr('Under investigation')),
+              backgroundColor: chipBg(context, status == 'REFUNDED' ? Colors.green : Colors.blue),
             ),
           ]),
-          Text('${c['category']} • ${formatDateTime(c['date'])}', style: const TextStyle(fontSize: 12)),
+          Text('${tr(c['category'])} • ${formatDateTime(c['date'])}', style: const TextStyle(fontSize: 12)),
           const Divider(),
-          row('Amount reported', rupees(c['amount'])),
-          row('Payment UTR', c['utr']),
+          row(tr('Amount reported'), rupees(c['amount'])),
+          row(tr('Payment UTR'), c['utr']),
           if ((c['recovered'] as int) > 0)
-            row('Returned to you', rupees(c['recovered']), color: Colors.green.shade700),
+            row(tr('Returned to you'), rupees(c['recovered']), color: strong(context, Colors.green)),
         ]),
       ),
     );
@@ -195,17 +199,17 @@ class ComplaintsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My fraud complaints')),
+      appBar: AppBar(title: Text(tr('My fraud complaints'))),
       body: FutureBuilder(
         future: api.get(path),
         builder: (context, snap) {
-          if (snap.hasError) return Center(child: Text(snap.error.toString()));
+          if (snap.hasError) return Center(child: Text(trMessage(snap.error!)));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final list = (snap.data as List).cast<Map<String, dynamic>>();
           if (list.isEmpty) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('No complaints. To report a payment, open it in your history and tap "Report fraud".',
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(tr('No complaints. To report a payment, open it in your history and tap "Report fraud".'),
                   textAlign: TextAlign.center),
             ));
           }
@@ -239,20 +243,20 @@ class NoticesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notices')),
+      appBar: AppBar(title: Text(tr('Notices'))),
       body: FutureBuilder(
         future: api.get(path),
         builder: (context, snap) {
-          if (snap.hasError) return Center(child: Text(snap.error.toString()));
+          if (snap.hasError) return Center(child: Text(trMessage(snap.error!)));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final list = (snap.data as List).cast<Map<String, dynamic>>();
-          if (list.isEmpty) return const Center(child: Text('No notices'));
+          if (list.isEmpty) return Center(child: Text(tr('No notices')));
           return ListView(padding: const EdgeInsets.all(12), children: [
             for (final n in list)
               Card(
                 child: ListTile(
                   leading: Icon(_icon(n['kind']), color: _color(n['kind'])),
-                  title: Text(n['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(tr(n['title']), style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${n['body']}\n${formatDateTime(n['date'])}'),
                   isThreeLine: true,
                 ),
@@ -278,7 +282,7 @@ class MuleWarningCard extends StatelessWidget {
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Icon(Icons.warning_amber, color: Colors.white, size: 32),
           const SizedBox(width: 10),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+          Expanded(child: Text(tr(message), style: const TextStyle(color: Colors.white))),
         ]),
       ),
     );
@@ -292,13 +296,13 @@ Future<bool> confirmPayMule(BuildContext context, String message) async {
     context: context,
     builder: (ctx) => AlertDialog(
       icon: const Icon(Icons.warning_amber, color: Colors.red, size: 48),
-      title: const Text('This account is on the mule list'),
-      content: Text(message),
+      title: Text(tr('This account is on the mule list')),
+      content: Text(tr(message)),
       actions: [
-        FilledButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel payment')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel payment'))),
         TextButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Pay anyway (repayment)', style: TextStyle(color: Colors.red)),
+          child: Text(tr('Pay anyway (repayment)'), style: const TextStyle(color: Colors.red)),
         ),
       ],
     ),

@@ -25,7 +25,7 @@ class _TransferScreenState extends State<TransferScreen> {
   bool _busy = false;
 
   Future<void> _verifyPayee() async {
-    if (_accNo.text != _accNo2.text) return showError(context, 'Account numbers do not match');
+    if (_accNo.text != _accNo2.text) return showError(context, tr('Account numbers do not match'));
     setState(() => _busy = true);
     try {
       final res = await api.get('/api/lookup', {'account_no': _accNo.text, 'ifsc': _ifsc.text});
@@ -43,12 +43,18 @@ class _TransferScreenState extends State<TransferScreen> {
     final warning = _payee!['warning'] as String?;
     if (warning != null && !await confirmPayMule(context, warning)) return;
     if (!mounted) return;
+    // Location is mandatory: no GPS position, no payment.
+    setState(() => _busy = true);
+    final loc = await location.requireForPayment(context);
+    if (mounted) setState(() => _busy = false);
+    if (loc == null || !mounted) return;
     final pin = await askPin(context,
-        title: 'Enter MPIN', subtitle: 'Send ${rupees(amount)} to ${_payee!['name']} via $_mode');
+        title: tr('Enter MPIN'),
+        subtitle: tr('Send {amount} to {name} via {mode}',
+            {'amount': rupees(amount), 'name': _payee!['name'], 'mode': _mode}));
     if (pin == null) return;
     setState(() => _busy = true);
     try {
-      final loc = await location.current();
       final res = await api.post('/api/transfers', {
         'from_account': widget.account.accountNo,
         'to_account': _accNo.text,
@@ -74,7 +80,7 @@ class _TransferScreenState extends State<TransferScreen> {
   Widget build(BuildContext context) {
     final verified = _payee != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Send money')),
+      appBar: AppBar(title: Text(tr('Send money'))),
       body: Form(
         key: _form,
         child: ListView(
@@ -83,8 +89,8 @@ class _TransferScreenState extends State<TransferScreen> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.account_balance_wallet),
-                title: Text('From A/c ${widget.account.accountNo}'),
-                subtitle: Text('Available ${rupees(widget.account.availableBalance)}'),
+                title: Text(tr('From A/c {account}', {'account': widget.account.accountNo})),
+                subtitle: Text(tr('Available {amount}', {'amount': rupees(widget.account.availableBalance)})),
               ),
             ),
             const SizedBox(height: 12),
@@ -93,7 +99,7 @@ class _TransferScreenState extends State<TransferScreen> {
               readOnly: verified,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Beneficiary account number'),
+              decoration: InputDecoration(labelText: tr('Beneficiary account number')),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -102,7 +108,7 @@ class _TransferScreenState extends State<TransferScreen> {
               obscureText: !verified,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Re-enter account number'),
+              decoration: InputDecoration(labelText: tr('Re-enter account number')),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -110,20 +116,20 @@ class _TransferScreenState extends State<TransferScreen> {
               readOnly: verified,
               maxLength: 11,
               inputFormatters: [UpperCaseFormatter()],
-              decoration: const InputDecoration(labelText: 'IFSC code', hintText: 'e.g. GNGA0000005'),
+              decoration: InputDecoration(labelText: tr('IFSC code'), hintText: tr('e.g. {ifsc}', {'ifsc': 'GNGA0000005'})),
             ),
             if (!verified)
-              FilledButton.tonal(onPressed: _busy ? null : _verifyPayee, child: const Text('Verify beneficiary'))
+              FilledButton.tonal(onPressed: _busy ? null : _verifyPayee, child: Text(tr('Verify beneficiary')))
             else ...[
               Card(
-                color: Colors.green.shade50,
+                color: softBg(context, Colors.green),
                 child: ListTile(
                   leading: const Icon(Icons.verified_user, color: Colors.green),
                   title: Text(_payee!['business_name'].toString().isNotEmpty
                       ? '${_payee!['business_name']} (${_payee!['name']})'
                       : _payee!['name']),
                   subtitle: Text('${_payee!['bank']} • ${_payee!['branch']}'),
-                  trailing: TextButton(onPressed: () => setState(() => _payee = null), child: const Text('Change')),
+                  trailing: TextButton(onPressed: () => setState(() => _payee = null), child: Text(tr('Change'))),
                 ),
               ),
               if (_payee!['warning'] != null) MuleWarningCard(_payee!['warning']),
@@ -132,25 +138,25 @@ class _TransferScreenState extends State<TransferScreen> {
                 controller: _amount,
                 autofocus: true,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Amount', prefixText: '₹ '),
-                validator: (v) => parsePaise(v ?? '') == null ? 'Enter a valid amount' : null,
+                decoration: InputDecoration(labelText: tr('Amount'), prefixText: '₹ '),
+                validator: (v) => parsePaise(v ?? '') == null ? tr('Enter a valid amount') : null,
               ),
               const SizedBox(height: 12),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'IMPS', label: Text('IMPS (instant)')),
-                  ButtonSegment(value: 'NEFT', label: Text('NEFT')),
+                segments: [
+                  ButtonSegment(value: 'IMPS', label: Text(tr('IMPS (instant)'))),
+                  const ButtonSegment(value: 'NEFT', label: Text('NEFT')),
                 ],
                 selected: {_mode},
                 onSelectionChanged: (s) => setState(() => _mode = s.first),
               ),
               const SizedBox(height: 12),
-              TextFormField(controller: _remark, maxLength: 60, decoration: const InputDecoration(labelText: 'Remark (optional)')),
+              TextFormField(controller: _remark, maxLength: 60, decoration: InputDecoration(labelText: tr('Remark (optional)'))),
               FilledButton.icon(
                 style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
                 onPressed: _busy ? null : _send,
                 icon: const Icon(Icons.send),
-                label: Text(_busy ? 'Sending…' : 'Pay now'),
+                label: Text(_busy ? tr('Sending…') : tr('Pay now')),
               ),
             ],
           ],
@@ -179,23 +185,28 @@ class _SuccessScreen extends StatelessWidget {
             const Icon(Icons.check_circle, color: Colors.white, size: 96),
             const SizedBox(height: 16),
             Text(rupees(amount), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-            Text('sent to ${(payee['business_name'] as String).isNotEmpty ? payee['business_name'] : payee['name']}',
+            Text(tr('sent to {name}', {
+                  'name': (payee['business_name'] as String).isNotEmpty ? payee['business_name'] : payee['name']
+                }),
                 style: const TextStyle(color: Colors.white, fontSize: 18)),
             const SizedBox(height: 24),
             Card(
               child: Column(children: [
-                ListTile(dense: true, title: const Text('UTR / Reference'), trailing: SelectableText(res['utr'])),
-                ListTile(dense: true, title: const Text('Mode'), trailing: Text(res['channel'])),
-                ListTile(dense: true, title: const Text('Date'), trailing: Text(formatDateTime(res['date']))),
-                ListTile(dense: true, title: const Text('Location'), trailing: Text(place)),
-                ListTile(dense: true, title: const Text('Available balance'), trailing: Text(rupees(res['available_balance']))),
+                ListTile(dense: true, title: Text(tr('UTR / Reference')), trailing: SelectableText(res['utr'])),
+                ListTile(dense: true, title: Text(tr('Mode')), trailing: Text(res['channel'])),
+                ListTile(dense: true, title: Text(tr('Date')), trailing: Text(formatDateTime(res['date']))),
+                ListTile(dense: true, title: Text(tr('Location')), trailing: Text(place)),
+                ListTile(
+                    dense: true,
+                    title: Text(tr('Available balance')),
+                    trailing: Text(rupees(res['available_balance']))),
               ]),
             ),
             const Spacer(),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.green.shade800),
               onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
+              child: Text(tr('Done')),
             ),
           ]),
         ),

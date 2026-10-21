@@ -58,16 +58,16 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           icon: const Icon(Icons.check_circle, color: Colors.green, size: 56),
-          title: const Text('Bank account linked'),
+          title: Text(tr('Bank account linked')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Your UPI ID is'),
+            Text(tr('Your UPI ID is')),
             const SizedBox(height: 6),
             SelectableText(res['vpa']['address'],
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Remember your UPI PIN. You need it for every payment.', textAlign: TextAlign.center),
+            Text(tr('Remember your UPI PIN. You need it for every payment.'), textAlign: TextAlign.center),
           ]),
-          actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done'))],
+          actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Done')))],
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -81,7 +81,7 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Link bank account')),
+      appBar: AppBar(title: Text(tr('Link bank account'))),
       body: _busy && _accounts == null
           ? const Center(child: CircularProgressIndicator())
           : _account != null
@@ -93,7 +93,7 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
   }
 
   Widget _bankStep() => ListView(padding: const EdgeInsets.all(16), children: [
-        Text('Select your bank', style: Theme.of(context).textTheme.titleLarge),
+        Text(tr('Select your bank'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         for (final b in BankBrand.all)
           Card(
@@ -114,31 +114,32 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
         BankLogo(_bank!, size: 40),
         const SizedBox(width: 12),
         Expanded(child: Text(_bank!.name, style: Theme.of(context).textTheme.titleLarge)),
-        TextButton(onPressed: () => setState(() => _bank = null), child: const Text('Change')),
+        TextButton(onPressed: () => setState(() => _bank = null), child: Text(tr('Change'))),
       ]),
       const SizedBox(height: 16),
       if (accounts.isEmpty)
         Card(
-          color: Colors.orange.shade50,
+          color: softBg(context, Colors.orange),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('No ${_bank!.name} account is registered with your mobile number.\n\n'
-                'Open an account in the ${_bank!.name} app using the same mobile number, then try again.'),
+            child: Text(tr('No {bank} account is registered with your mobile number.\n\n'
+                'Open an account in the {bank} app using the same mobile number, then try again.',
+                {'bank': _bank!.name})),
           ),
         )
       else ...[
-        const Text('Accounts found with your mobile number:'),
+        Text(tr('Accounts found with your mobile number:')),
         for (final a in accounts)
           Card(
             child: ListTile(
               enabled: a['already_linked'] != true,
               leading: Icon(a['account_type'] == 'CURRENT' ? Icons.storefront : Icons.savings),
-              title: Text('A/c ${a['account_no_masked']}'),
+              title: Text(tr('A/c {account}', {'account': a['account_no_masked']})),
               subtitle: Text([
                 (a['business_name'] as String).isNotEmpty ? a['business_name'] : a['holder_name'],
-                a['account_type'] == 'CURRENT' ? 'Current (Merchant)' : 'Savings',
+                a['account_type'] == 'CURRENT' ? tr('Current (Merchant)') : tr('Savings'),
                 a['branch'],
-                if (a['already_linked'] == true) 'Already linked',
+                if (a['already_linked'] == true) tr('Already linked'),
               ].join(' • ')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => setState(() => _account = a),
@@ -151,26 +152,26 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
   Widget _cardStep() => Form(
         key: _form,
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text('Set UPI PIN', style: Theme.of(context).textTheme.titleLarge),
-          Text('${_bank!.name} A/c ${_account!['account_no_masked']}'),
+          Text(tr('Set UPI PIN'), style: Theme.of(context).textTheme.titleLarge),
+          Text(tr('{bank} A/c {account}', {'bank': _bank!.name, 'account': _account!['account_no_masked']})),
           const SizedBox(height: 16),
-          const Text('Enter your debit card details. You can see them in your bank app under "Debit card".'),
+          Text(tr('Enter your debit card details. You can see them in your bank app under "Debit card".')),
           const SizedBox(height: 12),
           TextFormField(
             controller: _last6,
             maxLength: 6,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Last 6 digits of debit card'),
-            validator: (v) => (v?.length ?? 0) == 6 ? null : 'Enter 6 digits',
+            decoration: InputDecoration(labelText: tr('Last 6 digits of debit card')),
+            validator: (v) => (v?.length ?? 0) == 6 ? null : tr('Enter 6 digits'),
           ),
           TextFormField(
             controller: _expiry,
             maxLength: 5,
             keyboardType: TextInputType.number,
             inputFormatters: [ExpiryFormatter()],
-            decoration: const InputDecoration(labelText: 'Expiry (valid thru)', hintText: 'MM/YY'),
-            validator: (v) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(v ?? '') ? null : 'Format MM/YY',
+            decoration: InputDecoration(labelText: tr('Expiry (valid thru)'), hintText: 'MM/YY'),
+            validator: (v) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(v ?? '') ? null : tr('Format MM/YY'),
           ),
           const Divider(height: 24),
           TextFormField(
@@ -179,8 +180,8 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'New 4-digit UPI PIN'),
-            validator: (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : 'Enter 4 digits',
+            decoration: InputDecoration(labelText: tr('New 4-digit UPI PIN')),
+            validator: (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : tr('Enter 4 digits'),
           ),
           TextFormField(
             controller: _pin2,
@@ -188,16 +189,16 @@ class _LinkBankScreenState extends State<LinkBankScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Confirm UPI PIN'),
-            validator: (v) => v != _pin.text ? 'PINs do not match' : null,
+            decoration: InputDecoration(labelText: tr('Confirm UPI PIN')),
+            validator: (v) => v != _pin.text ? tr('PINs do not match') : null,
           ),
           const SizedBox(height: 8),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
             onPressed: _busy ? null : _link,
-            child: Text(_busy ? 'Linking…' : 'Set UPI PIN & link'),
+            child: Text(_busy ? tr('Linking…') : tr('Set UPI PIN & link')),
           ),
-          TextButton(onPressed: () => setState(() => _account = null), child: const Text('Back')),
+          TextButton(onPressed: () => setState(() => _account = null), child: Text(tr('Back'))),
         ]),
       );
 }

@@ -52,24 +52,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _ => true,
         });
     return Scaffold(
-      appBar: AppBar(title: const Text('Payment history')),
+      appBar: AppBar(title: Text(tr('Payment history'))),
       body: _items == null
           ? const Center(child: CircularProgressIndicator())
           : Column(children: [
               if (widget.reportMode)
                 Card(
-                  color: Colors.red.shade50,
+                  color: softBg(context, Colors.red),
                   margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: const ListTile(
-                    leading: Icon(Icons.report, color: Colors.red),
-                    title: Text('Which payment was fraud?'),
-                    subtitle: Text('Tap the payment, then "Report fraud".'),
+                  child: ListTile(
+                    leading: const Icon(Icons.report, color: Colors.red),
+                    title: Text(tr('Which payment was fraud?')),
+                    subtitle: Text(tr('Tap the payment, then "Report fraud".')),
                   ),
                 ),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
-                  for (final (key, label) in [('ALL', 'All'), ('SENT', 'Sent'), ('RECEIVED', 'Received')])
+                  for (final (key, label) in [('ALL', tr('All')), ('SENT', tr('Sent')), ('RECEIVED', tr('Received'))])
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
@@ -86,21 +86,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      if (items.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No payments')),
+                      if (items.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(tr('No payments'))),
                       for (final p in items)
                         InkWell(
                           onTap: () => showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: Text(p.sent ? 'Paid ${rupees(p.amount)}' : 'Received ${rupees(p.amount)}'),
+                              title: Text(p.sent
+                                  ? tr('Paid {amount}', {'amount': rupees(p.amount)})
+                                  : tr('Received {amount}', {'amount': rupees(p.amount)})),
                               content: Text([
-                                '${p.sent ? 'To' : 'From'}: ${p.otherName} (${p.otherVpa})',
-                                '${p.sent ? 'From' : 'To'}: ${p.myVpa}',
-                                'UPI Ref (UTR): ${p.utr}',
-                                'Date: ${formatDateTime(p.date)}',
-                                if (p.remark.isNotEmpty) 'Note: ${p.remark}',
-                                if (p.locationLabel.isNotEmpty) 'Location: ${p.locationLabel}',
-                                'Status: ${p.status}',
+                                '${p.sent ? tr('To') : tr('From')}: ${p.otherName} (${p.otherVpa})',
+                                '${p.sent ? tr('From') : tr('To')}: ${p.myVpa}',
+                                '${tr('UPI Ref (UTR)')}: ${p.utr}',
+                                '${tr('Date')}: ${formatDateTime(p.date)}',
+                                if (p.remark.isNotEmpty) '${tr('Note')}: ${p.remark}',
+                                if (p.locationLabel.isNotEmpty) '${tr('Location')}: ${p.locationLabel}',
+                                '${tr('Status')}: ${p.status == 'SUCCESS' ? tr('Success') : p.status}',
                               ].join('\n')),
                               actions: [
                                 if (p.sent)
@@ -114,9 +116,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       ));
                                     },
                                     icon: const Icon(Icons.report, color: Colors.red),
-                                    label: const Text('Report fraud', style: TextStyle(color: Colors.red)),
+                                    label: Text(tr('Report fraud'), style: const TextStyle(color: Colors.red)),
                                   ),
-                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
                               ],
                             ),
                           ),

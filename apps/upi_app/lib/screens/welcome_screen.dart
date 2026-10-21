@@ -54,21 +54,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
-                  tooltip: 'Settings',
+                  tooltip: tr('Settings'),
                   icon: const Icon(Icons.settings, color: Colors.white70),
                   onPressed: _openSettings,
                 ),
               ),
               if (_connected == null)
-                const Center(child: Text('Connecting… (the free server may take up to a minute to wake up)',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 12))),
+                Center(child: Text(tr('Connecting… (the free server may take up to a minute to wake up)'),
+                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 12))),
               if (_connected == false)
                 Card(
-                  color: Colors.orange.shade50,
+                  color: softBg(context, Colors.orange),
                   child: ListTile(
                     leading: const Icon(Icons.wifi_off, color: Colors.deepOrange),
-                    title: const Text('Not connected to the RakshakPay server'),
-                    subtitle: Text('Tap to check settings.\nNow: ${api.baseUrl}'),
+                    title: Text(tr('Not connected to the RakshakPay server')),
+                    subtitle: Text(tr('Tap to check settings.\nNow: {url}', {'url': api.baseUrl})),
                     onTap: _openSettings,
                   ),
                 ),
@@ -78,14 +78,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const Text('RakshakPay', textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              const Text('Safe UPI payments for every bank', textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 16)),
+              Text(tr('Safe UPI payments for every bank'), textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 16)),
               const Spacer(flex: 2),
               FilledButton(
                 style: FilledButton.styleFrom(
                     backgroundColor: kSaffron, foregroundColor: Colors.white, padding: const EdgeInsets.all(16)),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                child: const Text('Get started', style: TextStyle(fontSize: 17)),
+                child: Text(tr('Get started'), style: const TextStyle(fontSize: 17)),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -93,11 +93,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     foregroundColor: Colors.white, side: const BorderSide(color: Colors.white),
                     padding: const EdgeInsets.all(16)),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                child: const Text('I already have an account', style: TextStyle(fontSize: 17)),
+                child: Text(tr('I already have an account'), style: const TextStyle(fontSize: 17)),
               ),
               const SizedBox(height: 16),
-              const Text('Demo UPI app • Fake money only', textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text(tr('Demo UPI app • Fake money only'), textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ]),
           ),
         ),

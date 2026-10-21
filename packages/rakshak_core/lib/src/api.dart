@@ -4,7 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_settings.dart';
+
 /// An error message from the server that can be shown to the user.
+/// [message] is the server's English `detail` text (so code can compare it); showError()
+/// translates it for display.
 class ApiException implements Exception {
   ApiException(this.message, [this.statusCode = 0]);
   final String message;
@@ -76,8 +80,8 @@ class RakshakApi {
       // The free cloud server sleeps when unused and needs up to a minute to wake up.
       res = await call().timeout(const Duration(seconds: 75));
     } catch (_) {
-      throw ApiException('Cannot reach the RakshakPay server at $baseUrl. '
-          'Check your internet connection and the server address in Settings.');
+      throw ApiException(tr('Cannot reach the RakshakPay server at {url}. '
+          'Check your internet connection and the server address in Settings.', {'url': baseUrl}));
     }
     final body = res.body.isEmpty ? null : jsonDecode(utf8.decode(res.bodyBytes));
     if (res.statusCode >= 200 && res.statusCode < 300) return body;

@@ -102,13 +102,13 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
     final lang = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Announcement language'),
+        title: Text(tr('Announcement voice language')),
         children: [
           RadioGroup<String>(
             groupValue: announcer.language,
             onChanged: (v) => Navigator.pop(ctx, v),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              for (final e in kLanguages.entries) RadioListTile<String>(value: e.key, title: Text(e.value)),
+              for (final e in kVoiceLanguages.entries) RadioListTile<String>(value: e.key, title: Text(e.value)),
             ]),
           ),
         ],
@@ -117,8 +117,10 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
     if (lang == null) return;
     await announcer.setLanguage(lang);
     if (!await announcer.languageAvailable(lang) && mounted) {
-      showError(context, 'This phone has no ${kLanguages[lang]} voice installed, so English will be used. '
-          'Install it in phone Settings > Text-to-speech.');
+      showError(
+          context,
+          tr('This phone has no {language} voice installed, so English will be used. '
+              'Install it in phone Settings > Text-to-speech.', {'language': kVoiceLanguages[lang]}));
     }
     setState(() {});
     announcer.test();
@@ -133,7 +135,7 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
         title: Text(shop?.displayName ?? 'RakshakPay Business'),
         actions: [
           IconButton(
-            tooltip: announcer.enabled ? 'Sound on' : 'Sound off',
+            tooltip: announcer.enabled ? tr('Sound on') : tr('Sound off'),
             icon: Icon(announcer.enabled ? Icons.volume_up : Icons.volume_off),
             onPressed: () async {
               await announcer.setEnabled(!announcer.enabled);
@@ -145,14 +147,16 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
               'lang' => _chooseLanguage(),
               'test' => announcer.test(),
               'settings' => Navigator.push(
-                  context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location))),
+                  context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location, makesPayments: false))),
               _ => _logout(),
             },
             itemBuilder: (_) => [
-              PopupMenuItem(value: 'lang', child: Text('Language: ${kLanguages[announcer.language]}')),
-              const PopupMenuItem(value: 'test', child: Text('Test sound')),
-              const PopupMenuItem(value: 'settings', child: Text('Settings')),
-              const PopupMenuItem(value: 'logout', child: Text('Log out')),
+              PopupMenuItem(
+                  value: 'lang',
+                  child: Text(tr('Voice language: {name}', {'name': kVoiceLanguages[announcer.language]}))),
+              PopupMenuItem(value: 'test', child: Text(tr('Test sound'))),
+              PopupMenuItem(value: 'settings', child: Text(tr('Settings'))),
+              PopupMenuItem(value: 'logout', child: Text(tr('Log out'))),
             ],
           ),
         ],
@@ -167,7 +171,7 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
                     if (_shops.length > 1)
                       DropdownButtonFormField<String>(
                         initialValue: shop.address,
-                        decoration: const InputDecoration(labelText: 'Shop'),
+                        decoration: InputDecoration(labelText: tr('Shop')),
                         items: [for (final s in _shops) DropdownMenuItem(value: s.address, child: Text(s.displayName))],
                         onChanged: (v) async {
                           await api.prefs.setString('merchant.vpa', v!);
@@ -184,9 +188,10 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
                               color: Colors.green.shade600,
                               child: ListTile(
                                 leading: const Icon(Icons.volume_up, color: Colors.white, size: 36),
-                                title: Text('${rupees(_flash!.amount)} received',
+                                title: Text(tr('{amount} received', {'amount': rupees(_flash!.amount)}),
                                     style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                                subtitle: Text('from ${_flash!.otherName}', style: const TextStyle(color: Colors.white)),
+                                subtitle: Text(tr('from {name}', {'name': _flash!.otherName}),
+                                    style: const TextStyle(color: Colors.white)),
                               ),
                             ),
                     ),
@@ -206,7 +211,7 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(shop.address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          const Text('Scan with any UPI app to pay'),
+                          Text(tr('Scan with any UPI app to pay')),
                         ]),
                       ),
                     ),
@@ -214,17 +219,17 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
                     Card(
                       color: kIndigo,
                       child: ListTile(
-                        title: const Text("Today's collection", style: TextStyle(color: Colors.white70)),
+                        title: Text(tr("Today's collection"), style: const TextStyle(color: Colors.white70)),
                         subtitle: Text(rupees(total),
                             style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                        trailing: Text('${_today.length}\npayments', textAlign: TextAlign.center,
+                        trailing: Text(tr('{count}\npayments', {'count': _today.length}), textAlign: TextAlign.center,
                             style: const TextStyle(color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text("Today's payments", style: Theme.of(context).textTheme.titleMedium),
+                    Text(tr("Today's payments"), style: Theme.of(context).textTheme.titleMedium),
                     if (_today.isEmpty)
-                      const Padding(padding: EdgeInsets.all(16), child: Text('No payments yet today')),
+                      Padding(padding: const EdgeInsets.all(16), child: Text(tr('No payments yet today'))),
                     for (final p in _today)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -233,7 +238,7 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
                         subtitle: Text('${p.otherVpa}\n${formatDateTime(p.date)}'),
                         isThreeLine: true,
                         trailing: Text('+ ${rupees(p.amount)}',
-                            style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+                            style: TextStyle(color: strong(context, Colors.green), fontWeight: FontWeight.bold)),
                       ),
                   ]),
                 ),
@@ -241,15 +246,15 @@ class _SoundboxScreenState extends State<SoundboxScreen> {
   }
 
   Widget _noShop() => ListView(padding: const EdgeInsets.all(24), children: [
-        const Icon(Icons.storefront, size: 72, color: kIndigo),
+        Icon(Icons.storefront, size: 72, color: isDark(context) ? Theme.of(context).colorScheme.primary : kIndigo),
         const SizedBox(height: 12),
-        Text('No merchant account linked', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+        Text(tr('No merchant account linked'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        const Text('1. In any bank app, open a new account and choose "Current / Merchant" '
+        Text(tr('1. In any bank app, open a new account and choose "Current / Merchant" '
             '(use this same mobile number).\n'
             '2. In the RakshakPay app, tap "Link bank" and link that account.\n'
-            '3. Come back here and pull down to refresh.'),
+            '3. Come back here and pull down to refresh.')),
         const SizedBox(height: 16),
-        FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: const Text('Refresh')),
+        FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: Text(tr('Refresh'))),
       ]);
 }

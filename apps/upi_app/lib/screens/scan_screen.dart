@@ -29,7 +29,7 @@ class _ScanScreenState extends State<ScanScreen> {
     if (raw == null) return;
     final upi = parseUpiQr(raw);
     if (upi == null) {
-      showError(context, 'This QR code is not a UPI payment code');
+      showError(context, tr('This QR code is not a UPI payment code'));
       return;
     }
     _handled = true;
@@ -42,10 +42,10 @@ class _ScanScreenState extends State<ScanScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scan any UPI QR'),
+        title: Text(tr('Scan any UPI QR')),
         actions: [
           IconButton(
-            tooltip: 'Torch',
+            tooltip: tr('Torch'),
             icon: const Icon(Icons.flashlight_on),
             onPressed: () => _controller.toggleTorch(),
           ),
@@ -58,8 +58,10 @@ class _ScanScreenState extends State<ScanScreen> {
           errorBuilder: (context, error) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Camera not available: ${error.errorCode.name}.\n'
-                  'Allow camera permission in phone Settings, or pay by UPI ID instead.',
+              child: Text(
+                  tr('Camera not available: {error}.\n'
+                      'Allow camera permission in phone Settings, or pay by UPI ID instead.',
+                      {'error': error.errorCode.name}),
                   textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
             ),
           ),
@@ -82,7 +84,7 @@ class _ScanScreenState extends State<ScanScreen> {
             onPressed: () => Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (_) => PayScreen(profile: widget.profile))),
             icon: const Icon(Icons.keyboard),
-            label: const Text('Enter UPI ID or mobile instead'),
+            label: Text(tr('Enter UPI ID or mobile instead')),
           ),
         ),
       ]),

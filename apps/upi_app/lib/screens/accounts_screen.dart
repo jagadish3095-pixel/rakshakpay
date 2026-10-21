@@ -26,7 +26,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   Future<void> _checkBalance(UpiVpa vpa) async {
     final bank = BankBrand.byCode(vpa.bankCode);
-    final pin = await askPin(context, title: 'Enter UPI PIN', subtitle: '${bank.name} A/c ${vpa.accountNoMasked}');
+    final pin = await askPin(context,
+        title: tr('Enter UPI PIN'), subtitle: tr('{bank} A/c {account}', {'bank': bank.name, 'account': vpa.accountNoMasked}));
     if (pin == null || !mounted) return;
     try {
       final res = await api.post('/api/upi/balance', {'vpa': vpa.address, 'upi_pin': pin});
@@ -37,15 +38,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
           icon: BankLogo(bank, size: 48),
           title: Text(bank.name),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('A/c ${vpa.accountNoMasked}'),
+            Text(tr('A/c {account}', {'account': vpa.accountNoMasked})),
             const SizedBox(height: 12),
-            const Text('Available balance'),
+            Text(tr('Available balance')),
             Text(rupees(res['available_balance']),
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             if ((res['lien_amount'] as int) > 0)
-              Text('On hold: ${rupees(res['lien_amount'])}', style: const TextStyle(color: Colors.orange)),
+              Text(tr('On hold: {amount}', {'amount': rupees(res['lien_amount'])}),
+                  style: TextStyle(color: strong(ctx, Colors.orange))),
           ]),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('OK')))],
         ),
       );
     } catch (e) {
@@ -56,7 +58,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bank accounts')),
+      appBar: AppBar(title: Text(tr('Bank accounts'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -69,13 +71,14 @@ class _AccountsScreenState extends State<AccountsScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: BankLogo(BankBrand.byCode(v.bankCode), size: 44),
                     title: Text(BankBrand.byCode(v.bankCode).name),
-                    subtitle: Text('A/c ${v.accountNoMasked}${v.isMerchant ? ' • Merchant' : ''}\n${v.address}'),
+                    subtitle: Text('${tr('A/c {account}', {'account': v.accountNoMasked})}'
+                        '${v.isMerchant ? ' • ${tr('Merchant')}' : ''}\n${v.address}'),
                     isThreeLine: true,
                     trailing: StatusBadge(v.status),
                   ),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: FilledButton.tonal(onPressed: () => _checkBalance(v), child: const Text('Check balance')),
+                    child: FilledButton.tonal(onPressed: () => _checkBalance(v), child: Text(tr('Check balance'))),
                   ),
                 ]),
               ),
@@ -85,7 +88,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
             onPressed: () => Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (_) => const LinkBankScreen())),
             icon: const Icon(Icons.add),
-            label: const Text('Link another bank account'),
+            label: Text(tr('Link another bank account')),
           ),
         ],
       ),

@@ -47,13 +47,13 @@ class _DashboardScreenState extends State<DashboardScreen> with LiveRefresh {
     final wide = MediaQuery.sizeOf(context).width >= 1100;
 
     final stats = Wrap(spacing: 8, runSpacing: 8, children: [
-      StatTile('Complaints', '${d['complaints']}', icon: Icons.assignment),
-      StatTile('Reported loss', r('reported_amount'), color: Colors.red.shade700, icon: Icons.report),
-      StatTile('Held (liens)', r('held'), color: Colors.orange.shade800, icon: Icons.lock),
-      StatTile('Crypto frozen', r('crypto_frozen'), color: Colors.purple, icon: Icons.ac_unit),
-      StatTile('Returned to victims', r('recovered'), color: Colors.green.shade700, icon: Icons.savings),
-      StatTile('Mule accounts', '${d['mule_accounts']}', color: Colors.red.shade900, icon: Icons.gpp_bad),
-      StatTile('Court orders pending', '${d['court_pending']}', color: Colors.brown, icon: Icons.gavel),
+      StatTile(tr('Complaints'), '${d['complaints']}', icon: Icons.assignment),
+      StatTile(tr('Reported loss'), r('reported_amount'), color: strong(context, Colors.red), icon: Icons.report),
+      StatTile(tr('Held (liens)'), r('held'), color: strong(context, Colors.orange), icon: Icons.lock),
+      StatTile(tr('Crypto frozen'), r('crypto_frozen'), color: strong(context, Colors.purple), icon: Icons.ac_unit),
+      StatTile(tr('Returned to victims'), r('recovered'), color: strong(context, Colors.green), icon: Icons.savings),
+      StatTile(tr('Mule accounts'), '${d['mule_accounts']}', color: strong(context, Colors.red), icon: Icons.gpp_bad),
+      StatTile(tr('Court orders pending'), '${d['court_pending']}', color: strong(context, Colors.brown), icon: Icons.gavel),
     ]);
 
     final map = Card(
@@ -63,29 +63,29 @@ class _DashboardScreenState extends State<DashboardScreen> with LiveRefresh {
 
     final hotspotList = Card(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Text('Mule hotspots', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(tr('Mule hotspots'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
-        if (hotspots.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('No data yet')),
+        if (hotspots.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(tr('No data yet'))),
         for (final h in hotspots.take(8))
           ListTile(
             dense: true,
             leading: CircleAvatar(
               radius: 14,
-              backgroundColor: Colors.red.shade100,
+              backgroundColor: chipBg(context, Colors.red),
               child: Text('${h['mules'] + h['cashouts']}', style: const TextStyle(fontSize: 12)),
             ),
             title: Text('${h['city']}, ${h['state']}'),
-            subtitle: Text('${h['mules']} mules • ${h['cashouts']} ATM cash-outs • '
-                '${rupees(h['amount'], decimals: false)} victim money'),
+            subtitle: Text(tr('{mules} mules • {cashouts} ATM cash-outs • {amount} victim money',
+                {'mules': h['mules'], 'cashouts': h['cashouts'], 'amount': rupees(h['amount'], decimals: false)})),
           ),
       ]),
     );
 
     final recentList = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Latest complaints', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      if (recent.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('No complaints yet')),
+      Text(tr('Latest complaints'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      if (recent.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(tr('No complaints yet'))),
       for (final c in recent) ComplaintTile(c),
     ]);
 
@@ -95,9 +95,9 @@ class _DashboardScreenState extends State<DashboardScreen> with LiveRefresh {
         Row(children: [
           const Icon(Icons.circle, size: 10, color: Colors.green),
           const SizedBox(width: 6),
-          const Text('Live'),
+          Text(tr('Live')),
           const Spacer(),
-          IconButton(onPressed: reload, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Refresh'), onPressed: reload, icon: const Icon(Icons.refresh)),
         ]),
         stats,
         const SizedBox(height: 12),

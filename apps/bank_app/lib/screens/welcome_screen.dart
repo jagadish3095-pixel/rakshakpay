@@ -57,18 +57,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    tooltip: 'Settings (server address)',
+                    tooltip: tr('Settings (server address)'),
                     icon: const Icon(Icons.settings, color: Colors.white70),
                     onPressed: _openSettings,
                   ),
                 ),
                 if (_connected == false)
                   Card(
-                    color: Colors.orange.shade50,
+                    color: softBg(context, Colors.orange),
                     child: ListTile(
                       leading: const Icon(Icons.wifi_off, color: Colors.deepOrange),
-                      title: const Text('Not connected to the RakshakPay server'),
-                      subtitle: Text('Tap here and enter the laptop address.\nNow: ${api.baseUrl}'),
+                      title: Text(tr('Not connected to the RakshakPay server')),
+                      subtitle: Text(tr('Tap here and enter the laptop address.\nNow: {url}', {'url': api.baseUrl})),
                       onTap: _openSettings,
                     ),
                   ),
@@ -78,7 +78,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 Text(brand.name, textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
-                Text(brand.tagline, textAlign: TextAlign.center,
+                Text(tr(brand.tagline), textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white70, fontSize: 16)),
                 const Spacer(flex: 2),
                 FilledButton(
@@ -86,7 +86,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       backgroundColor: Colors.white, foregroundColor: brand.color,
                       padding: const EdgeInsets.all(16)),
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                  child: const Text('Login', style: TextStyle(fontSize: 17)),
+                  child: Text(tr('Login'), style: const TextStyle(fontSize: 17)),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
@@ -95,16 +95,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       padding: const EdgeInsets.all(16)),
                   onPressed: () =>
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenAccountScreen())),
-                  child: const Text('Open a new account', style: TextStyle(fontSize: 17)),
+                  child: Text(tr('Open a new account'), style: const TextStyle(fontSize: 17)),
                 ),
                 TextButton.icon(
                   onPressed: () =>
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const OfficerLoginScreen())),
                   icon: const Icon(Icons.badge, color: Colors.white70),
-                  label: const Text('Bank staff login', style: TextStyle(color: Colors.white70)),
+                  label: Text(tr('Bank staff login'), style: const TextStyle(color: Colors.white70)),
                 ),
-                const Text('Demo bank for RakshakPay • Fake money only',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(tr('Demo bank for RakshakPay • Fake money only'),
+                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),

@@ -45,14 +45,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Log in to RakshakPay')),
+      appBar: AppBar(title: Text(tr('Log in to RakshakPay'))),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           const Center(child: RakshakLogo(size: 80)),
           if (_saved.isNotEmpty) ...[
             const SizedBox(height: 20),
-            Text('Saved on this phone', style: Theme.of(context).textTheme.titleSmall),
+            Text(tr('Saved on this phone'), style: Theme.of(context).textTheme.titleSmall),
             for (final s in _saved)
               Card(
                 child: ListTile(
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   subtitle: Text('+91 ${s.loginId}'),
                   onTap: _busy ? null : () => _login(s.loginId, s.password),
                   trailing: IconButton(
-                    tooltip: 'Forget',
+                    tooltip: tr('Forget'),
                     icon: const Icon(Icons.close),
                     onPressed: () async {
                       await savedLogins.remove(s.loginId);
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Mobile number', prefixText: '+91 '),
+            decoration: InputDecoration(labelText: tr('Mobile number'), prefixText: '+91 '),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: '4-digit passcode'),
+            decoration: InputDecoration(labelText: tr('4-digit passcode')),
             onSubmitted: (_) => _login(_mobile.text, _pass.text, remember: _remember),
           ),
           CheckboxListTile(
@@ -95,12 +95,12 @@ class _LoginScreenState extends State<LoginScreen> {
             controlAffinity: ListTileControlAffinity.leading,
             value: _remember,
             onChanged: (v) => setState(() => _remember = v!),
-            title: const Text('Remember me on this phone'),
+            title: Text(tr('Remember me on this phone')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
             onPressed: _busy ? null : () => _login(_mobile.text, _pass.text, remember: _remember),
-            child: Text(_busy ? 'Logging in…' : 'Log in'),
+            child: Text(_busy ? tr('Logging in…') : tr('Log in')),
           ),
         ],
       ),

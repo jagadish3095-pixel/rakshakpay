@@ -2,7 +2,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Languages the soundbox can speak. Code = Android text-to-speech locale.
-const kLanguages = {'en-IN': 'English', 'hi-IN': 'हिन्दी (Hindi)', 'kn-IN': 'ಕನ್ನಡ (Kannada)'};
+const kVoiceLanguages = {'en-IN': 'English', 'hi-IN': 'हिन्दी (Hindi)', 'kn-IN': 'ಕನ್ನಡ (Kannada)'};
 
 /// What the soundbox says for a payment, e.g. "Received 1500 rupees on RakshakPay".
 String announcementText(String lang, int paise) {

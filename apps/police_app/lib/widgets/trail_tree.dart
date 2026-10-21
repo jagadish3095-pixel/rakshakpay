@@ -27,9 +27,11 @@ class TrailTree extends StatelessWidget {
       if (!seen.add(account)) return; // already expanded (money merged back)
       for (final e in out[account] ?? const []) {
         if (e['kind'] == 'ATM') {
-          rows.add(_LeafRow(depth + 1, Icons.atm, Colors.black87,
-              'ATM cash ${rupees(e['amount'])}${e['location'] != null ? ' at ${e['location']['label']}' : ''}',
-              'Lost as cash • ${formatDateTime(e['date'])} • UTR ${e['utr']}'));
+          rows.add(_LeafRow(depth + 1, Icons.atm, null,
+              e['location'] != null
+                  ? tr('ATM cash {amount} at {place}', {'amount': rupees(e['amount']), 'place': e['location']['label']})
+                  : tr('ATM cash {amount}', {'amount': rupees(e['amount'])}),
+              '${tr('Lost as cash')} • ${formatDateTime(e['date'])} • UTR ${e['utr']}'));
         } else if (e['to_account'] != null && nodes.containsKey(e['to_account'])) {
           walk(e['to_account'], depth + 1, e);
         }
@@ -51,13 +53,13 @@ class _NodeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = roleColor(n['role']);
     final chips = <(String, int, Color)>[
-      ('held', n['held'], Colors.orange.shade800),
-      ('spent at shop', n['spent_merchant'], Colors.green.shade800),
-      ('ATM cash', n['cashed_out'], Colors.black87),
-      ('crypto frozen', n['crypto_frozen'], Colors.purple),
-      ('crypto escaped', n['crypto_escaped'], Colors.red.shade900),
-      ('court lien', n['recovery_approved'], Colors.brown),
-      ('returned', n['released'] + n['crypto_released'], Colors.green),
+      (tr('held {amount}'), n['held'], strong(context, Colors.orange)),
+      (tr('spent at shop {amount}'), n['spent_merchant'], strong(context, Colors.green)),
+      (tr('ATM cash {amount}'), n['cashed_out'], Theme.of(context).colorScheme.onSurface),
+      (tr('crypto frozen {amount}'), n['crypto_frozen'], strong(context, Colors.purple)),
+      (tr('crypto escaped {amount}'), n['crypto_escaped'], strong(context, Colors.red)),
+      (tr('court lien {amount}'), n['recovery_approved'], strong(context, Colors.brown)),
+      (tr('returned {amount}'), n['released'] + n['crypto_released'], strong(context, Colors.green)),
     ].where((c) => c.$2 > 0);
     final name = (n['business_name'] as String).isNotEmpty ? '${n['business_name']} (${n['holder']})' : n['holder'];
     return Padding(
@@ -71,9 +73,10 @@ class _NodeRow extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (via != null)
-                Text('↳ ${rupees(via!['amount'])} via ${via!['channel']} • ${formatDateTime(via!['date'])}'
-                    '${via!['location'] != null ? ' • from ${via!['location']['label']}' : ''}',
-                    style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                Text('↳ ${tr('{amount} via {channel}', {'amount': rupees(via!['amount']), 'channel': via!['channel']})}'
+                    ' • ${formatDateTime(via!['date'])}'
+                    '${via!['location'] != null ? ' • ${tr('from {place}', {'place': via!['location']['label']})}' : ''}',
+                    style: TextStyle(fontSize: 11, color: muted(context))),
               Row(children: [
                 Icon(n['role'] == 'MERCHANT' ? Icons.storefront : n['role'] == 'EXCHANGE' ? Icons.currency_bitcoin : Icons.person,
                     color: color),
@@ -81,15 +84,16 @@ class _NodeRow extends StatelessWidget {
                 Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold))),
                 Text(roleLabel(n['role']), style: TextStyle(color: color, fontSize: 12)),
               ]),
-              Text('${n['bank']} A/c ${n['account_no']} • ${n['status']}', style: const TextStyle(fontSize: 12)),
+              Text('${n['bank']} ${tr('A/c')} ${n['account_no']} • ${n['status']}', style: const TextStyle(fontSize: 12)),
               if (chips.isNotEmpty)
                 Wrap(spacing: 6, runSpacing: 4, children: [
                   for (final (label, amount, c) in chips)
                     Chip(
                       visualDensity: VisualDensity.compact,
-                      label: Text('$label ${rupees(amount, decimals: false)}', style: TextStyle(color: c, fontSize: 11)),
+                      label: Text(label.replaceAll('{amount}', rupees(amount, decimals: false)),
+                          style: TextStyle(color: c, fontSize: 11)),
                       side: BorderSide(color: c),
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                     ),
                 ]),
             ]),
@@ -104,7 +108,7 @@ class _LeafRow extends StatelessWidget {
   const _LeafRow(this.depth, this.icon, this.color, this.title, this.subtitle);
   final int depth;
   final IconData icon;
-  final Color color;
+  final Color? color; // null: the normal text colour
   final String title, subtitle;
 
   @override
@@ -112,10 +116,10 @@ class _LeafRow extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(left: depth * 22.0),
       child: Card(
-        color: Colors.grey.shade100,
+        color: panelBg(context),
         child: ListTile(
           dense: true,
-          leading: Icon(icon, color: color),
+          leading: Icon(icon, color: color ?? Theme.of(context).colorScheme.onSurface),
           title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text(subtitle),
         ),

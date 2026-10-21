@@ -32,12 +32,27 @@ class _VerificationsScreenState extends State<VerificationsScreen> with LiveRefr
     }
   }
 
-  static (String, Color) _look(String? decision) => switch (decision) {
-        'INNOCENT' => ('Innocent', Colors.green),
-        'TRICKED' => ('Tricked', Colors.orange),
-        'INVOLVED' => ('Involved', Colors.red),
-        _ => ('Waiting', Colors.blueGrey),
+  static (String, MaterialColor) _look(String? decision) => switch (decision) {
+        'INNOCENT' => (tr('Innocent'), Colors.green),
+        'TRICKED' => (tr('Tricked'), Colors.orange),
+        'INVOLVED' => (tr('Involved'), Colors.red),
+        _ => (tr('Waiting'), Colors.blueGrey),
       };
+
+  /// Display name of a re-KYC check code sent by the server.
+  static String _kyc(Object? code) => switch (code) {
+        'pan_original' => tr('Original PAN card'),
+        'aadhaar_original' => tr('Original Aadhaar card'),
+        'live_photo' => tr('Live photo'),
+        'mobile_otp' => tr('Mobile OTP'),
+        _ => '$code',
+      };
+
+  /// The branch's reason category (one of a fixed English list on the server), translated for display.
+  static String _reason(Object? category) {
+    final english = '$category';
+    return tr(english);
+  }
 
   Future<void> _open(Map<String, dynamic> c) async {
     final remarks = TextEditingController();
@@ -49,55 +64,63 @@ class _VerificationsScreenState extends State<VerificationsScreen> with LiveRefr
           width: 560,
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('A/c ${c['account_no']} • PAN ${c['pan']} • +91 ${c['mobile']}'),
-              Text('Verified at ${c['branch']} by ${c['officer']} on ${formatDateTime(c['date'])}'),
-              Text('Re-KYC done: ${(c['kyc_checks'] as List).join(', ')}'),
+              Text('${tr('A/c')} ${c['account_no']} • PAN ${c['pan']} • +91 ${c['mobile']}'),
+              Text(tr('Verified at {branch} by {officer} on {date}',
+                  {'branch': c['branch'], 'officer': c['officer'], 'date': formatDateTime(c['date'])})),
+              Text(tr('Re-KYC done: {checks}', {'checks': (c['kyc_checks'] as List).map(_kyc).join(', ')})),
               const Divider(),
-              Text('Customer says: ${c['reason_category']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(tr('Customer says: {reason}', {'reason': _reason(c['reason_category'])}),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('"${c['statement']}"'),
               const SizedBox(height: 8),
-              Text('Bank officer recommends: ${c['recommendation']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              if ((c['officer_notes'] as String).isNotEmpty) Text('Notes: ${c['officer_notes']}'),
-              if (c['undertaking_signed'] == true) const Text('✔ Undertaking signed'),
-              if (c['awareness_done'] == true) const Text('✔ Awareness session attended'),
+              Text(tr('Bank officer recommends: {decision}', {'decision': _look(c['recommendation']).$1}),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              if ((c['officer_notes'] as String).isNotEmpty) Text(tr('Notes: {notes}', {'notes': c['officer_notes']})),
+              if (c['undertaking_signed'] == true) Text(tr('✔ Undertaking signed')),
+              if (c['awareness_done'] == true) Text(tr('✔ Awareness session attended')),
               const Divider(),
-              const Text('Fraud involvement', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(tr('Fraud involvement'), style: const TextStyle(fontWeight: FontWeight.bold)),
               for (final i in c['involvement'])
-                Text('${i['complaint']}: received ${rupees(i['received'])}, forwarded ${rupees(i['forwarded'])}'
-                    '${i['held'] > 0 ? ', held ${rupees(i['held'])}' : ''}'
-                    '${i['spent_merchant'] > 0 ? ', spent ${rupees(i['spent_merchant'])}' : ''}'
-                    '${i['cashed_out'] > 0 ? ', ATM cash ${rupees(i['cashed_out'])}' : ''}'
-                    '${i['to_crypto'] > 0 ? ', to crypto ${rupees(i['to_crypto'])}' : ''}'),
+                Text('${i['complaint']}: ${tr('received {amount}', {'amount': rupees(i['received'])})}, '
+                    '${tr('forwarded {amount}', {'amount': rupees(i['forwarded'])})}'
+                    '${i['held'] > 0 ? ', ${tr('held {amount}', {'amount': rupees(i['held'])})}' : ''}'
+                    '${i['spent_merchant'] > 0 ? ', ${tr('spent {amount}', {'amount': rupees(i['spent_merchant'])})}' : ''}'
+                    '${i['cashed_out'] > 0 ? ', ${tr('ATM cash {amount}', {'amount': rupees(i['cashed_out'])})}' : ''}'
+                    '${i['to_crypto'] > 0 ? ', ${tr('to crypto {amount}', {'amount': rupees(i['to_crypto'])})}' : ''}'),
               if (c['status'] == 'PENDING_POLICE') ...[
                 const SizedBox(height: 12),
-                TextField(controller: remarks, maxLines: 2, decoration: const InputDecoration(labelText: 'Police remarks')),
+                TextField(controller: remarks, maxLines: 2, decoration: InputDecoration(labelText: tr('Police remarks'))),
               ] else
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text('Decided ${c['decision']} by ${c['decided_by']} on ${formatDateTime(c['decided_at'])}'
-                      '${(c['police_remarks'] as String).isNotEmpty ? '\n"${c['police_remarks']}"' : ''}'),
+                  child: Text(tr('Decided {decision} by {name} on {date}', {
+                        'decision': _look(c['decision']).$1,
+                        'name': c['decided_by'],
+                        'date': formatDateTime(c['decided_at']),
+                      }) +
+                      ((c['police_remarks'] as String).isNotEmpty ? '\n"${c['police_remarks']}"' : '')),
                 ),
             ]),
           ),
         ),
         actions: c['status'] != 'PENDING_POLICE'
-            ? [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))]
+            ? [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close')))]
             : [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Later'))),
                 OutlinedButton(
                   onPressed: () => Navigator.pop(ctx, 'INVOLVED'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Involved: confirm mule'),
+                  style: OutlinedButton.styleFrom(foregroundColor: strong(ctx, Colors.red)),
+                  child: Text(tr('Involved: confirm mule')),
                 ),
                 OutlinedButton(
                   onPressed: () => Navigator.pop(ctx, 'TRICKED'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.orange.shade800),
-                  child: const Text('Tricked: restore with conditions'),
+                  style: OutlinedButton.styleFrom(foregroundColor: strong(ctx, Colors.orange)),
+                  child: Text(tr('Tricked: restore with conditions')),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, 'INNOCENT'),
                   style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
-                  child: const Text('Innocent: delist'),
+                  child: Text(tr('Innocent: delist')),
                 ),
               ],
       ),
@@ -105,7 +128,10 @@ class _VerificationsScreenState extends State<VerificationsScreen> with LiveRefr
     if (decision == null) return;
     try {
       await api.post('/api/police/verifications/${c['id']}/decide', {'decision': decision, 'remarks': remarks.text});
-      if (mounted) showInfo(context, '${c['customer']}: ${_look(decision).$1}. The customer and bank have been notified.');
+      if (mounted) {
+        showInfo(context, tr('{name}: {decision}. The customer and bank have been notified.',
+            {'name': c['customer'], 'decision': _look(decision).$1}));
+      }
       reload();
     } catch (e) {
       if (mounted) showError(context, e);
@@ -117,9 +143,9 @@ class _VerificationsScreenState extends State<VerificationsScreen> with LiveRefr
     final list = _list;
     if (list == null) return const Center(child: CircularProgressIndicator());
     if (list.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('No branch verifications yet. Banks send them here after a flagged customer visits the branch.',
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(tr('No branch verifications yet. Banks send them here after a flagged customer visits the branch.'),
             textAlign: TextAlign.center),
       ));
     }
@@ -127,12 +153,14 @@ class _VerificationsScreenState extends State<VerificationsScreen> with LiveRefr
       for (final c in list)
         Card(
           child: ListTile(
-            leading: Icon(Icons.fact_check, color: _look(c['decision']).$2),
-            title: Text('${c['customer']} • ${c['bank']} A/c ${c['account_no']}'),
-            subtitle: Text('${c['reason_category']}\nBank recommends ${c['recommendation']} • ${formatDateTime(c['date'])}'),
+            leading: Icon(Icons.fact_check, color: strong(context, _look(c['decision']).$2)),
+            title: Text('${c['customer']} • ${c['bank']} ${tr('A/c')} ${c['account_no']}'),
+            subtitle: Text('${_reason(c['reason_category'])}\n'
+                '${tr('Bank recommends {decision}', {'decision': _look(c['recommendation']).$1})} • ${formatDateTime(c['date'])}'),
             isThreeLine: true,
             trailing: Chip(
-              label: Text(_look(c['decision']).$1, style: TextStyle(color: _look(c['decision']).$2)),
+              label: Text(_look(c['decision']).$1,
+                  style: TextStyle(color: strong(context, _look(c['decision']).$2))),
               side: BorderSide(color: _look(c['decision']).$2),
             ),
             onTap: () => _open(c),

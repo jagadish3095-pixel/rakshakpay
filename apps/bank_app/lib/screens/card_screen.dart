@@ -19,7 +19,7 @@ class _CardScreenState extends State<CardScreen> {
     try {
       await api.post('/api/accounts/${widget.account.accountNo}/card', {'blocked': block});
       setState(() => _blocked = block);
-      if (mounted) showInfo(context, block ? 'Card blocked' : 'Card unblocked');
+      if (mounted) showInfo(context, block ? tr('Card blocked') : tr('Card unblocked'));
     } catch (e) {
       if (mounted) showError(context, e);
     }
@@ -34,7 +34,7 @@ class _CardScreenState extends State<CardScreen> {
     final validThru = widget.account.cardExpiry; // needed to set a UPI PIN
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Debit card')),
+      appBar: AppBar(title: Text(tr('Debit card'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -67,18 +67,18 @@ class _CardScreenState extends State<CardScreen> {
                   Text('VALID THRU $validThru', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 ]),
                 if (_blocked)
-                  const Text('BLOCKED', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  Text(tr('BLOCKED'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
               ]),
             ),
           ),
           SwitchListTile(
-            title: const Text('Show card number'),
+            title: Text(tr('Show card number')),
             value: _showNumber,
             onChanged: (v) => setState(() => _showNumber = v),
           ),
           SwitchListTile(
-            title: const Text('Block card'),
-            subtitle: const Text('Stops ATM withdrawals with this card'),
+            title: Text(tr('Block card')),
+            subtitle: Text(tr('Stops ATM withdrawals with this card')),
             value: _blocked,
             onChanged: _toggle,
           ),

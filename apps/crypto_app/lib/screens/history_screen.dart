@@ -33,13 +33,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
+      appBar: AppBar(title: Text(tr('History'))),
       body: _items == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(padding: const EdgeInsets.all(12), children: [
-                if (_items!.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Nothing yet')),
+                if (_items!.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(tr('Nothing yet'))),
                 for (final e in _items!)
                   Card(
                     child: ListTile(
@@ -50,8 +50,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       subtitle: Text([
                         if (e.quantity > 0) '${formatQty(e.quantity)} ${e.asset}',
                         if (e.price != null) '@ ${rupees(e.price!)}',
-                        if (e.address.isNotEmpty) 'to ${e.address}',
-                        if (e.utr.isNotEmpty) 'UTR ${e.utr}',
+                        if (e.address.isNotEmpty) tr('to {address}', {'address': e.address}),
+                        if (e.utr.isNotEmpty) tr('UTR {utr}', {'utr': e.utr}),
                         formatDateTime(e.date),
                       ].join('\n')),
                       isThreeLine: true,

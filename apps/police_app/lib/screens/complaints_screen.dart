@@ -35,7 +35,7 @@ class _ComplaintsScreenState extends State<PoliceComplaintsScreen> with LiveRefr
   Widget build(BuildContext context) {
     final list = _list;
     if (list == null) return const Center(child: CircularProgressIndicator());
-    if (list.isEmpty) return const Center(child: Text('No complaints yet'));
+    if (list.isEmpty) return Center(child: Text(tr('No complaints yet')));
     return RefreshIndicator(
       onRefresh: reload,
       child: ListView(padding: const EdgeInsets.all(12), children: [for (final c in list) ComplaintTile(c)]),
@@ -53,13 +53,15 @@ class ComplaintTile extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: refunded ? Colors.green.shade100 : Colors.red.shade100,
-          child: Icon(refunded ? Icons.check : Icons.report, color: refunded ? Colors.green : Colors.red),
+          backgroundColor: refunded ? chipBg(context, Colors.green) : chipBg(context, Colors.red),
+          child: Icon(refunded ? Icons.check : Icons.report,
+              color: refunded ? strong(context, Colors.green) : strong(context, Colors.red)),
         ),
         title: Text('${c['ack_no']} • ${rupees(c['amount'], decimals: false)}'),
         subtitle: Text('${c['category']} • ${formatDateTime(c['date'])}\n'
-            '${c['accounts_traced']} accounts traced, ${c['mules']} mules • held ${rupees(c['held'], decimals: false)}'
-            ' • returned ${rupees(c['recovered'], decimals: false)}'),
+            '${tr('{count} accounts traced, {mules} mules', {'count': c['accounts_traced'], 'mules': c['mules']})}'
+            ' • ${tr('held {amount}', {'amount': rupees(c['held'], decimals: false)})}'
+            ' • ${tr('returned {amount}', {'amount': rupees(c['recovered'], decimals: false)})}'),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.push(

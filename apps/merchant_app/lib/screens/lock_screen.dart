@@ -16,7 +16,7 @@ class LockScreen extends StatelessWidget {
       color: kIndigo,
       accent: kSaffron,
       logo: const RakshakLogo(size: 72, onDark: true),
-      prompt: 'Enter your RakshakPay passcode',
+      prompt: tr('Enter your RakshakPay passcode'),
       loadName: () async => (await loadProfile()).name,
       verify: (pin) => api.post('/api/upi/unlock', {'passcode': pin}),
       onUnlocked: () => onLaunch

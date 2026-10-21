@@ -49,30 +49,31 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> with Live
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Release money to the victim?'),
+        title: Text(tr('Release money to the victim?')),
         content: SizedBox(
           width: 460,
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Under the magistrate\'s refund order, this pays:'),
+            Text(tr("Under the magistrate's refund order, this pays:")),
             const SizedBox(height: 8),
-            line('Held money + approved recovery liens (as far as balances allow)', accounts),
-            line('Frozen crypto with an approved seizure order', crypto),
+            line(tr('Held money + approved recovery liens (as far as balances allow)'), accounts),
+            line(tr('Frozen crypto with an approved seizure order'), crypto),
             const Divider(),
-            line('Total paid now', accounts + crypto, color: Colors.green.shade700),
+            line(tr('Total paid now'), accounts + crypto, color: strong(ctx, Colors.green)),
             if (waitRecovery + waitCrypto > 0) ...[
               const SizedBox(height: 12),
-              const Text('Not paid yet: waiting for court approval (Court orders tab)',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              if (waitRecovery > 0) line('Recovery liens (spent / cash / escaped crypto)', waitRecovery, color: Colors.brown),
-              if (waitCrypto > 0) line('Crypto seizure at the exchange', waitCrypto, color: Colors.brown),
+              Text(tr('Not paid yet: waiting for court approval (Court orders tab)'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (waitRecovery > 0)
+                line(tr('Recovery liens (spent / cash / escaped crypto)'), waitRecovery, color: strong(ctx, Colors.brown)),
+              if (waitCrypto > 0) line(tr('Crypto seizure at the exchange'), waitCrypto, color: strong(ctx, Colors.brown)),
             ],
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
           FilledButton(
             onPressed: accounts + crypto > 0 ? () => Navigator.pop(ctx, true) : null,
-            child: const Text('Release'),
+            child: Text(tr('Release')),
           ),
         ],
       ),
@@ -82,8 +83,8 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> with Live
       final res = await api.post('/api/police/complaints/${widget.complaintId}/release');
       if (!mounted) return;
       showInfo(context, res['released'] > 0
-          ? '${rupees(res['released'])} returned to the victim'
-          : 'Nothing new to release (balances are empty or already released)');
+          ? tr('{amount} returned to the victim', {'amount': rupees(res['released'])})
+          : tr('Nothing new to release (balances are empty or already released)'));
       reload();
     } catch (e) {
       if (mounted) showError(context, e);
@@ -97,17 +98,17 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> with Live
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(d?['ack_no'] ?? 'Complaint'),
-          bottom: const TabBar(
+          title: Text(d?['ack_no'] ?? tr('Complaint')),
+          bottom: TabBar(
             isScrollable: true,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             indicatorColor: kAmber,
             tabs: [
-              Tab(icon: Icon(Icons.summarize), text: 'Summary'),
-              Tab(icon: Icon(Icons.map), text: 'Map'),
-              Tab(icon: Icon(Icons.account_tree), text: 'Money trail'),
-              Tab(icon: Icon(Icons.gavel), text: 'Court orders'),
+              Tab(icon: const Icon(Icons.summarize), text: tr('Summary')),
+              Tab(icon: const Icon(Icons.map), text: tr('Map')),
+              Tab(icon: const Icon(Icons.account_tree), text: tr('Money trail')),
+              Tab(icon: const Icon(Icons.gavel), text: tr('Court orders')),
             ],
           ),
         ),
@@ -143,24 +144,25 @@ class _Summary extends StatelessWidget {
       Card(
         child: ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text('${victim['holder']} • ${victim['bank']} A/c ${victim['account_no']}'),
-          subtitle: Text('${d['category']} • reported ${formatDateTime(d['date'])} via ${d['channel']}\n'
-              'Payment UTR ${d['utr']}${(d['description'] as String).isNotEmpty ? '\n"${d['description']}"' : ''}'),
+          title: Text('${victim['holder']} • ${victim['bank']} ${tr('A/c')} ${victim['account_no']}'),
+          subtitle: Text('${d['category']} • ${tr('reported {date} via {channel}', {'date': formatDateTime(d['date']), 'channel': d['channel']})}\n'
+              '${tr('Payment UTR {utr}', {'utr': d['utr']})}${(d['description'] as String).isNotEmpty ? '\n"${d['description']}"' : ''}'),
           isThreeLine: true,
         ),
       ),
       const SizedBox(height: 8),
       Wrap(spacing: 8, runSpacing: 8, children: [
-        StatTile('Amount lost', rupees(d['amount'], decimals: false), color: Colors.red.shade700, icon: Icons.report),
-        StatTile('Accounts traced', '${d['accounts_traced']} (${d['mules']} mules)', icon: Icons.account_tree),
-        StatTile('Held (lien)', r('held'), color: Colors.orange.shade800, icon: Icons.lock),
-        StatTile('Crypto frozen', r('crypto_frozen'), color: Colors.purple, icon: Icons.ac_unit),
-        StatTile('Spent at merchants', r('spent_merchant'), color: Colors.green.shade800, icon: Icons.storefront),
-        StatTile('ATM cash', r('cashed_out'), color: Colors.black87, icon: Icons.atm),
-        StatTile('Crypto escaped', r('crypto_escaped'), color: Colors.red.shade900, icon: Icons.flight_takeoff),
-        StatTile('Court: pending', r('court_pending'), color: Colors.brown, icon: Icons.gavel),
-        StatTile('Court: approved', r('court_approved'), color: Colors.brown, icon: Icons.gavel),
-        StatTile('Returned to victim', r('recovered'), color: Colors.green.shade700, icon: Icons.savings),
+        StatTile(tr('Amount lost'), rupees(d['amount'], decimals: false), color: strong(context, Colors.red), icon: Icons.report),
+        StatTile(tr('Accounts traced'), tr('{count} ({mules} mules)', {'count': d['accounts_traced'], 'mules': d['mules']}),
+            icon: Icons.account_tree),
+        StatTile(tr('Held (lien)'), r('held'), color: strong(context, Colors.orange), icon: Icons.lock),
+        StatTile(tr('Crypto frozen'), r('crypto_frozen'), color: strong(context, Colors.purple), icon: Icons.ac_unit),
+        StatTile(tr('Spent at merchants'), r('spent_merchant'), color: strong(context, Colors.green), icon: Icons.storefront),
+        StatTile(tr('ATM cash'), r('cashed_out'), color: Theme.of(context).colorScheme.onSurface, icon: Icons.atm),
+        StatTile(tr('Crypto escaped'), r('crypto_escaped'), color: strong(context, Colors.red), icon: Icons.flight_takeoff),
+        StatTile(tr('Court: pending'), r('court_pending'), color: strong(context, Colors.brown), icon: Icons.gavel),
+        StatTile(tr('Court: approved'), r('court_approved'), color: strong(context, Colors.brown), icon: Icons.gavel),
+        StatTile(tr('Returned to victim'), r('recovered'), color: strong(context, Colors.green), icon: Icons.savings),
       ]),
       const SizedBox(height: 16),
       FilledButton.icon(
@@ -168,12 +170,12 @@ class _Summary extends StatelessWidget {
         onPressed: onRelease,
         icon: const Icon(Icons.currency_rupee),
         label: Text(releasable > 0
-            ? 'Release to victim (court refund order) – ${rupees(releasable, decimals: false)} now'
-            : 'Release to victim – nothing to release now'),
+            ? tr('Release to victim (court refund order) – {amount} now', {'amount': rupees(releasable, decimals: false)})
+            : tr('Release to victim – nothing to release now')),
       ),
       const SizedBox(height: 8),
-      const Text('Tip: the Map tab has a Play button that replays the money moving between accounts.',
-          style: TextStyle(color: Colors.black54)),
+      Text(tr('Tip: the Map tab has a Play button that replays the money moving between accounts.'),
+          style: TextStyle(color: muted(context))),
     ]);
   }
 }

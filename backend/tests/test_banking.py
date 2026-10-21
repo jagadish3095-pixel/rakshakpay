@@ -1,5 +1,5 @@
 """End-to-end checks for Phase 1 banking. Run from backend/:  python -m pytest"""
-from helpers import login, open_account
+from helpers import HERE, login, open_account
 
 def test_five_banks_with_branches_and_atms(client):
     banks = client.get("/api/banks").json()
@@ -42,7 +42,7 @@ def test_open_login_transfer_passbook_and_atm(client):
 
     transfer = {"from_account": a["account_no"], "to_account": b["account_no"], "to_ifsc": b["ifsc"],
                 "amount": 50_000_00, "mode": "IMPS", "mpin": "1234",
-                "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "DEMO"}}
+                "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "GPS"}}
     assert client.post("/api/transfers", json={**transfer, "mpin": "0000"}, headers=priya).status_code == 401
     r = client.post("/api/transfers", json=transfer, headers=priya)
     assert r.status_code == 200, r.text
@@ -99,5 +99,5 @@ def test_live_update_reaches_receiver(client):
     with client.websocket_connect(f"/ws?token={kumar_token}") as ws:
         client.post("/api/transfers", headers=priya, json={
             "from_account": a["account_no"], "to_account": b["account_no"], "to_ifsc": b["ifsc"],
-            "amount": 500_00, "mpin": "1234"})
+            "amount": 500_00, "mpin": "1234", "location": HERE})
         assert ws.receive_json() == {"type": "account_changed", "account_no": b["account_no"]}

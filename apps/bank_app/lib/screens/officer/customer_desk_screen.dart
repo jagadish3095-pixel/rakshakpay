@@ -53,7 +53,7 @@ class _CustomerDeskScreenState extends State<CustomerDeskScreen> {
               backgroundColor: Colors.red.shade700,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.fact_check),
-              label: const Text('Start mule verification'),
+              label: Text(tr('Start mule verification')),
               onPressed: () async {
                 await Navigator.push(context, MaterialPageRoute(
                     builder: (_) => VerificationScreen(customer: c, account: toVerify.first)));
@@ -69,62 +69,79 @@ class _CustomerDeskScreenState extends State<CustomerDeskScreen> {
               padding: const EdgeInsets.all(14),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('CIF ${c['cif']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('DOB ${formatDate(c['dob'])} • ${c['gender']}'),
-                Text('Mobile +91 ${c['mobile']}'),
-                Text('PAN ${c['pan']} • Aadhaar ${c['aadhaar_masked']}'),
+                Text(tr('DOB {dob} • {gender}', {
+                  'dob': formatDate(c['dob']),
+                  'gender': switch (c['gender']) {
+                    'Female' => tr('Female'),
+                    'Male' => tr('Male'),
+                    'Other' => tr('Other'),
+                    final g => g,
+                  },
+                })),
+                Text(tr('Mobile {mobile}', {'mobile': '+91 ${c['mobile']}'})),
+                Text(tr('PAN {pan} • Aadhaar {aadhaar}', {'pan': c['pan'], 'aadhaar': c['aadhaar_masked']})),
                 Text(c['address']),
               ]),
             ),
           ),
           if (pending)
             Card(
-              color: Colors.blueGrey.shade50,
-              child: const ListTile(
-                leading: Icon(Icons.hourglass_top),
-                title: Text('Verification is with the police'),
-                subtitle: Text('The account stays restricted until the police decide.'),
+              color: softBg(context, Colors.blueGrey),
+              child: ListTile(
+                leading: const Icon(Icons.hourglass_top),
+                title: Text(tr('Verification is with the police')),
+                subtitle: Text(tr('The account stays restricted until the police decide.')),
               ),
             ),
-          section('Accounts'),
+          section(tr('Accounts')),
           for (final a in accounts)
             Card(
               child: ListTile(
-                title: Text('A/c ${a['account_no']} • ${a['account_type'] == 'CURRENT' ? 'Current' : 'Savings'}'),
-                subtitle: Text('Balance ${rupees(a['balance'])} • on hold ${rupees(a['lien_amount'])}\n'
-                    'Available ${rupees(a['available_balance'])}'),
+                title: Text('${tr('A/c {account}', {'account': a['account_no']})} • '
+                    '${a['account_type'] == 'CURRENT' ? tr('Current') : tr('Savings')}'),
+                subtitle: Text(tr('Balance {balance} • on hold {hold}\nAvailable {available}', {
+                  'balance': rupees(a['balance']),
+                  'hold': rupees(a['lien_amount']),
+                  'available': rupees(a['available_balance']),
+                })),
                 isThreeLine: true,
                 trailing: StatusBadge(a['status']),
               ),
             ),
           if ((c['other_banks'] as List).isNotEmpty) ...[
-            section('Same PAN in other banks'),
+            section(tr('Same PAN in other banks')),
             for (final o in c['other_banks'])
               Card(child: ListTile(title: Text('${o['bank']} • ${o['account_no_masked']}'), trailing: StatusBadge(o['status']))),
           ],
-          section('Fraud involvement'),
-          if ((c['involvement'] as List).isEmpty) const Text('  Not found in any money trail'),
+          section(tr('Fraud involvement')),
+          if ((c['involvement'] as List).isEmpty) Text('  ${tr('Not found in any money trail')}'),
           for (final i in c['involvement'])
             Card(
-              color: Colors.red.shade50,
+              color: softBg(context, Colors.red),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${i['complaint']} • ${i['category']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Victim money received ${rupees(i['received'])}, forwarded ${rupees(i['forwarded'])}'),
-                  if (i['held'] > 0) Text('Held for victim: ${rupees(i['held'])}'),
-                  if (i['spent_merchant'] > 0) Text('Spent at merchants: ${rupees(i['spent_merchant'])}'),
-                  if (i['cashed_out'] > 0) Text('Withdrawn as cash: ${rupees(i['cashed_out'])}'),
-                  if (i['to_crypto'] > 0) Text('Sent to crypto exchange: ${rupees(i['to_crypto'])}'),
+                  Text(tr('Victim money received {received}, forwarded {forwarded}',
+                      {'received': rupees(i['received']), 'forwarded': rupees(i['forwarded'])})),
+                  if (i['held'] > 0) Text(tr('Held for victim: {amount}', {'amount': rupees(i['held'])})),
+                  if (i['spent_merchant'] > 0)
+                    Text(tr('Spent at merchants: {amount}', {'amount': rupees(i['spent_merchant'])})),
+                  if (i['cashed_out'] > 0) Text(tr('Withdrawn as cash: {amount}', {'amount': rupees(i['cashed_out'])})),
+                  if (i['to_crypto'] > 0)
+                    Text(tr('Sent to crypto exchange: {amount}', {'amount': rupees(i['to_crypto'])})),
                   for (final o in i['court_orders'])
-                    Text('Court recovery ${rupees(o['amount'])}: ${o['status'] == 'APPROVED' ? 'approved' : 'pending'}'),
+                    Text(o['status'] == 'APPROVED'
+                        ? tr('Court recovery {amount}: approved', {'amount': rupees(o['amount'])})
+                        : tr('Court recovery {amount}: pending', {'amount': rupees(o['amount'])})),
                 ]),
               ),
             ),
           if (cases.isNotEmpty) ...[
-            section('Verifications'),
+            section(tr('Verifications')),
             for (final x in cases) VerificationCaseCard(x),
           ],
-          section('Notices sent to the customer'),
+          section(tr('Notices sent to the customer')),
           for (final n in c['notices'])
             Card(child: ListTile(title: Text(n['title']), subtitle: Text('${n['body']}\n${formatDateTime(n['date'])}'))),
         ]),

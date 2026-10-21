@@ -4,11 +4,20 @@ import 'package:flutter/material.dart';
 const kIndigo = Color(0xFF3B2A8C);
 const kSaffron = Color(0xFFFF8F1F);
 
-ThemeData rakshakTheme() => ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: kIndigo, primary: kIndigo, secondary: kSaffron),
-      appBarTheme: const AppBarTheme(backgroundColor: kIndigo, foregroundColor: Colors.white),
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-    );
+ThemeData rakshakTheme([Brightness brightness = Brightness.light]) =>
+    brandTheme(kIndigo, brightness, secondary: kSaffron);
+
+/// Day or night theme in an app's brand colour. The app bar keeps the brand colour (darker at night).
+ThemeData brandTheme(Color seed, Brightness brightness, {Color? secondary}) {
+  final light = brightness == Brightness.light;
+  return ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+        seedColor: seed, brightness: brightness, primary: light ? seed : null, secondary: light ? secondary : null),
+    appBarTheme: AppBarTheme(
+        backgroundColor: light ? seed : Color.lerp(seed, Colors.black, 0.45), foregroundColor: Colors.white),
+    inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
+  );
+}
 
 /// Shield with a rupee sign: "Rakshak" means protector.
 class RakshakLogo extends StatelessWidget {

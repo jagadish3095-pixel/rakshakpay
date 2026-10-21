@@ -24,11 +24,22 @@ class LocationIn(BaseModel):
     lat: float | None = None
     lng: float | None = None
     label: str = ""
-    source: str = "GPS"  # GPS | DEMO
+    source: str = "GPS"
 
     def to_location(self) -> Location:
         # Trim to the database column sizes (PostgreSQL rejects longer text).
         return Location(self.lat, self.lng, self.label[:120], self.source[:10] if self.lat is not None else "")
+
+
+LOCATION_REQUIRED = ("Location is mandatory for payments. Turn on location (GPS) on your phone "
+                     "and allow the app to use it, then try again.")
+
+
+def require_location(loc: LocationIn) -> Location:
+    """Every payment must carry the phone's GPS position (used to trace fraud)."""
+    if loc.lat is None or loc.lng is None:
+        raise HTTPException(428, LOCATION_REQUIRED)
+    return loc.to_location()
 
 
 def ensure_can_debit(account: Account) -> None:
@@ -55,6 +66,7 @@ class TransferRequest(BaseModel):
 async def transfer(req: TransferRequest, customer: Customer = Depends(current_customer),
                    db: Session = Depends(get_db)):
     sender = own_account(db, customer, req.from_account)
+    location = require_location(req.location)
     if not verify_secret(req.mpin, sender.mpin_hash):
         raise HTTPException(401, "Incorrect transaction PIN")
     ensure_can_debit(sender)
@@ -78,7 +90,7 @@ async def transfer(req: TransferRequest, customer: Customer = Depends(current_cu
         db, amount=req.amount, channel=channel, debit=sender, credit=receiver, remark=req.remark,
         narration_dr=f"{channel}/DR/{to_name.upper()}/{to_bank.ifsc_prefix}",
         narration_cr=f"{channel}/CR/{customer.full_name.upper()}/{from_bank.ifsc_prefix}",
-        location=req.location.to_location(),
+        location=location,
     )
     db.commit()
     await manager.account_changed(sender.account_no, receiver.account_no)

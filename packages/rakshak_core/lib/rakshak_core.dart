@@ -3,6 +3,7 @@ library;
 
 export 'src/api.dart';
 export 'src/app_lock.dart';
+export 'src/app_settings.dart';
 export 'src/banks.dart';
 export 'src/fraud_ui.dart';
 export 'src/live.dart';

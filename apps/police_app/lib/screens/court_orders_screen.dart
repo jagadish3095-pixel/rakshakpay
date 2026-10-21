@@ -47,24 +47,25 @@ class CourtOrderList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (orders.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('No court applications. They are drafted automatically when victim money was spent, '
-            'withdrawn as cash or sent out as crypto.', textAlign: TextAlign.center),
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(tr('No court applications. They are drafted automatically when victim money was spent, '
+            'withdrawn as cash or sent out as crypto.'), textAlign: TextAlign.center),
       ));
     }
     return ListView(padding: const EdgeInsets.all(12), children: [
       for (final o in orders)
         Card(
           child: ListTile(
-            leading: Icon(Icons.gavel, color: o['status'] == 'APPROVED' ? Colors.green : Colors.brown),
+            leading: Icon(Icons.gavel,
+                color: o['status'] == 'APPROVED' ? strong(context, Colors.green) : strong(context, Colors.brown)),
             title: Text('${o['holder']} • ${rupees(o['amount'])} • '
-                '${o['kind'] == 'CRYPTO_SEIZURE' ? 'Crypto seizure' : 'Recovery lien'}'),
-            subtitle: Text('${o['complaint_ack']} • ${o['bank']} A/c ${o['account_no']}\n${o['reason']}'),
+                '${o['kind'] == 'CRYPTO_SEIZURE' ? tr('Crypto seizure') : tr('Recovery lien')}'),
+            subtitle: Text('${o['complaint_ack']} • ${o['bank']} ${tr('A/c')} ${o['account_no']}\n${o['reason']}'),
             isThreeLine: true,
             trailing: Chip(
-              label: Text(o['status'] == 'APPROVED' ? 'Approved' : 'Pending'),
-              backgroundColor: o['status'] == 'APPROVED' ? Colors.green.shade100 : Colors.amber.shade100,
+              label: Text(o['status'] == 'APPROVED' ? tr('Approved') : tr('Pending')),
+              backgroundColor: o['status'] == 'APPROVED' ? chipBg(context, Colors.green) : chipBg(context, Colors.amber),
             ),
             onTap: () => _open(context, o),
           ),
@@ -76,32 +77,34 @@ class CourtOrderList extends StatelessWidget {
     final approve = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Application: ${o['holder']}'),
+        title: Text(tr('Application: {name}', {'name': o['holder']})),
         content: SizedBox(
           width: 560,
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                color: Colors.grey.shade100,
+                color: panelBg(ctx),
                 child: SelectableText(o['application_text'], style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
               ),
               if (o['status'] == 'APPROVED')
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('Approved ${formatDateTime(o['approved_at'])} (recorded by ${o['approved_by']})',
-                      style: const TextStyle(color: Colors.green)),
+                  child: Text(
+                      tr('Approved {date} (recorded by {name})',
+                          {'date': formatDateTime(o['approved_at']), 'name': o['approved_by']}),
+                      style: TextStyle(color: strong(ctx, Colors.green))),
                 ),
             ]),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Close'))),
           if (o['status'] == 'PENDING')
             FilledButton.icon(
               onPressed: () => Navigator.pop(ctx, true),
               icon: const Icon(Icons.gavel),
-              label: const Text('Approve (simulate court)'),
+              label: Text(tr('Approve (simulate court)')),
             ),
         ],
       ),
@@ -111,8 +114,9 @@ class CourtOrderList extends StatelessWidget {
       await api.post('/api/police/court-orders/${o['id']}/approve');
       if (context.mounted) {
         showInfo(context, o['kind'] == 'CRYPTO_SEIZURE'
-            ? 'Seizure approved: up to ${rupees(o['amount'])} of ${o['holder']}\'s frozen crypto can now be released to the victim'
-            : 'Recovery lien of ${rupees(o['amount'])} placed on ${o['holder']}\'s account');
+            ? tr("Seizure approved: up to {amount} of {name}'s frozen crypto can now be released to the victim",
+                {'amount': rupees(o['amount']), 'name': o['holder']})
+            : tr("Recovery lien of {amount} placed on {name}'s account", {'amount': rupees(o['amount']), 'name': o['holder']}));
       }
       onChanged();
     } catch (e) {

@@ -78,19 +78,19 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
   bool get _loaded => _cities.isNotEmpty && _branches.isNotEmpty;
 
   /// Shown instead of an empty dropdown when the server could not be reached.
-  Widget _notLoaded(String what) => Card(
-        color: Colors.orange.shade50,
+  Widget _notLoaded(String message) => Card(
+        color: softBg(context, Colors.orange),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Could not load the $what list from the RakshakPay server.'),
+            Text(message),
             const SizedBox(height: 4),
-            Text('Server: ${api.baseUrl}', style: const TextStyle(fontSize: 12)),
+            Text(tr('Server: {url}', {'url': api.baseUrl}), style: const TextStyle(fontSize: 12)),
             Row(children: [
-              TextButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+              TextButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: Text(tr('Retry'))),
               TextButton.icon(
                 icon: const Icon(Icons.settings),
-                label: const Text('Settings'),
+                label: Text(tr('Settings')),
                 onPressed: () async {
                   await Navigator.push(context,
                       MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location)));
@@ -103,11 +103,11 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
       );
 
   // ---------- validators ----------
-  String? _pinValidator(String? v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : 'Enter 4 digits';
+  String? _pinValidator(String? v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : tr('Enter 4 digits');
 
   void _sendOtp() {
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(_mobile.text)) {
-      showError(context, 'Enter a valid 10-digit mobile number first');
+      showError(context, tr('Enter a valid 10-digit mobile number first'));
       return;
     }
     // Demo only: a real bank sends this by SMS.
@@ -118,9 +118,10 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(children: [Icon(Icons.sms), SizedBox(width: 8), Text('SMS (demo)')]),
-        content: Text('Your ${brand.name} OTP is $_sentOtp. Do not share it with anyone.'),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+        title: Row(children: [const Icon(Icons.sms), const SizedBox(width: 8), Text(tr('SMS (demo)'))]),
+        content: Text(tr('Your {bank} OTP is {otp}. Do not share it with anyone.',
+            {'bank': brand.name, 'otp': _sentOtp})),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('OK')))],
       ),
     );
   }
@@ -129,15 +130,15 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
     if (_otp.text == _sentOtp) {
       setState(() => _mobileVerified = true);
     } else {
-      showError(context, 'Wrong OTP');
+      showError(context, tr('Wrong OTP'));
     }
   }
 
   void _next() {
     if (!_forms[_step].currentState!.validate()) return;
-    if (_step == 0 && _dob == null) return showError(context, 'Select your date of birth');
-    if (_step == 0 && !_mobileVerified) return showError(context, 'Verify your mobile number with OTP');
-    if (_step == 1 && !_consent) return showError(context, 'Please give Aadhaar e-KYC consent');
+    if (_step == 0 && _dob == null) return showError(context, tr('Select your date of birth'));
+    if (_step == 0 && !_mobileVerified) return showError(context, tr('Verify your mobile number with OTP'));
+    if (_step == 1 && !_consent) return showError(context, tr('Please give Aadhaar e-KYC consent'));
     if (_step < 4) {
       if (!_loaded) _load();
       setState(() => _step++);
@@ -181,7 +182,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Open new account')),
+      appBar: AppBar(title: Text(tr('Open new account'))),
       body: Stepper(
         currentStep: _step,
         onStepContinue: _busy ? null : _next,
@@ -191,18 +192,18 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
           child: Row(children: [
             FilledButton(
               onPressed: details.onStepContinue,
-              child: Text(_step == 4 ? (_busy ? 'Opening…' : 'Open account') : 'Next'),
+              child: Text(_step == 4 ? (_busy ? tr('Opening…') : tr('Open account')) : tr('Next')),
             ),
             const SizedBox(width: 12),
-            if (_step > 0) TextButton(onPressed: details.onStepCancel, child: const Text('Back')),
+            if (_step > 0) TextButton(onPressed: details.onStepCancel, child: Text(tr('Back'))),
           ]),
         ),
         steps: [
-          Step(title: const Text('Personal details'), isActive: _step >= 0, content: _personal()),
-          Step(title: const Text('KYC documents'), isActive: _step >= 1, content: _kyc()),
-          Step(title: const Text('Address'), isActive: _step >= 2, content: _addressStep()),
-          Step(title: const Text('Account & branch'), isActive: _step >= 3, content: _accountStep()),
-          Step(title: const Text('Security'), isActive: _step >= 4, content: _security()),
+          Step(title: Text(tr('Personal details')), isActive: _step >= 0, content: _personal()),
+          Step(title: Text(tr('KYC documents')), isActive: _step >= 1, content: _kyc()),
+          Step(title: Text(tr('Address')), isActive: _step >= 2, content: _addressStep()),
+          Step(title: Text(tr('Account & branch')), isActive: _step >= 3, content: _accountStep()),
+          Step(title: Text(tr('Security')), isActive: _step >= 4, content: _security()),
         ],
       ),
     );
@@ -216,8 +217,8 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
           TextFormField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Full name (as per PAN)'),
-            validator: (v) => RegExp(r'^[A-Za-z .]{3,}$').hasMatch(v?.trim() ?? '') ? null : 'Letters only',
+            decoration: InputDecoration(labelText: tr('Full name (as per PAN)')),
+            validator: (v) => RegExp(r'^[A-Za-z .]{3,}$').hasMatch(v?.trim() ?? '') ? null : tr('Letters only'),
           ),
           _gap(),
           InkWell(
@@ -232,18 +233,18 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
               if (picked != null) setState(() => _dob = picked);
             },
             child: InputDecorator(
-              decoration: const InputDecoration(labelText: 'Date of birth', suffixIcon: Icon(Icons.calendar_month)),
-              child: Text(_dob == null ? 'Select' : formatDate(_dob!.toIso8601String())),
+              decoration: InputDecoration(labelText: tr('Date of birth'), suffixIcon: const Icon(Icons.calendar_month)),
+              child: Text(_dob == null ? tr('Select') : formatDate(_dob!.toIso8601String())),
             ),
           ),
           _gap(),
           DropdownButtonFormField(
             initialValue: _gender,
-            decoration: const InputDecoration(labelText: 'Gender'),
-            items: const [
-              DropdownMenuItem(value: 'Female', child: Text('Female')),
-              DropdownMenuItem(value: 'Male', child: Text('Male')),
-              DropdownMenuItem(value: 'Other', child: Text('Other')),
+            decoration: InputDecoration(labelText: tr('Gender')),
+            items: [
+              DropdownMenuItem(value: 'Female', child: Text(tr('Female'))),
+              DropdownMenuItem(value: 'Male', child: Text(tr('Male'))),
+              DropdownMenuItem(value: 'Other', child: Text(tr('Other'))),
             ],
             onChanged: (v) => setState(() => _gender = v!),
           ),
@@ -257,18 +258,18 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
                 readOnly: _mobileVerified,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
-                  labelText: 'Mobile number',
+                  labelText: tr('Mobile number'),
                   prefixText: '+91 ',
                   suffixIcon: _mobileVerified ? const Icon(Icons.verified, color: Colors.green) : null,
                 ),
-                validator: (v) => RegExp(r'^[6-9]\d{9}$').hasMatch(v ?? '') ? null : 'Invalid mobile',
+                validator: (v) => RegExp(r'^[6-9]\d{9}$').hasMatch(v ?? '') ? null : tr('Invalid mobile'),
               ),
             ),
             const SizedBox(width: 8),
             if (!_mobileVerified)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: OutlinedButton(onPressed: _sendOtp, child: Text(_sentOtp == null ? 'Send OTP' : 'Resend')),
+                child: OutlinedButton(onPressed: _sendOtp, child: Text(_sentOtp == null ? tr('Send OTP') : tr('Resend'))),
               ),
           ]),
           if (_sentOtp != null && !_mobileVerified)
@@ -278,17 +279,17 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
                   controller: _otp,
                   keyboardType: TextInputType.number,
                   maxLength: 6,
-                  decoration: const InputDecoration(labelText: 'Enter OTP'),
+                  decoration: InputDecoration(labelText: tr('Enter OTP')),
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton.tonal(onPressed: _verifyOtp, child: const Text('Verify')),
+              FilledButton.tonal(onPressed: _verifyOtp, child: Text(tr('Verify'))),
             ]),
           _gap(),
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email (optional)'),
+            decoration: InputDecoration(labelText: tr('Email (optional)')),
           ),
         ]),
       );
@@ -301,8 +302,8 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             maxLength: 10,
             textCapitalization: TextCapitalization.characters,
             inputFormatters: [UpperCaseFormatter()],
-            decoration: const InputDecoration(labelText: 'PAN number', hintText: 'ABCDE1234F'),
-            validator: (v) => RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(v ?? '') ? null : 'Format: ABCDE1234F',
+            decoration: InputDecoration(labelText: tr('PAN number'), hintText: 'ABCDE1234F'),
+            validator: (v) => RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(v ?? '') ? null : tr('Format: ABCDE1234F'),
           ),
           _gap(),
           TextFormField(
@@ -310,14 +311,14 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             maxLength: 12,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Aadhaar number'),
-            validator: (v) => RegExp(r'^[2-9]\d{11}$').hasMatch(v ?? '') ? null : '12 digits, not starting 0/1',
+            decoration: InputDecoration(labelText: tr('Aadhaar number')),
+            validator: (v) => RegExp(r'^[2-9]\d{11}$').hasMatch(v ?? '') ? null : tr('12 digits, not starting 0/1'),
           ),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
             value: _consent,
             onChanged: (v) => setState(() => _consent = v!),
-            title: const Text('I consent to Aadhaar-based e-KYC verification for opening this account.'),
+            title: Text(tr('I consent to Aadhaar-based e-KYC verification for opening this account.')),
           ),
         ]),
       );
@@ -328,18 +329,18 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
           TextFormField(
             controller: _address,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'House / street / area'),
-            validator: (v) => (v?.trim().length ?? 0) < 5 ? 'Enter full address' : null,
+            decoration: InputDecoration(labelText: tr('House / street / area')),
+            validator: (v) => (v?.trim().length ?? 0) < 5 ? tr('Enter full address') : null,
           ),
           _gap(),
-          if (_cities.isEmpty) _notLoaded('city'),
+          if (_cities.isEmpty) _notLoaded(tr('Could not load the city list from the RakshakPay server.')),
           DropdownButtonFormField<City>(
             initialValue: _city,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'City'),
+            decoration: InputDecoration(labelText: tr('City')),
             items: [for (final c in _cities) DropdownMenuItem(value: c, child: Text('${c.name}, ${c.state}'))],
             onChanged: (v) => setState(() => _city = v),
-            validator: (v) => v == null ? 'Select city' : null,
+            validator: (v) => v == null ? tr('Select city') : null,
           ),
           _gap(),
           TextFormField(
@@ -347,8 +348,8 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             maxLength: 6,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'PIN code'),
-            validator: (v) => RegExp(r'^[1-9]\d{5}$').hasMatch(v ?? '') ? null : '6 digits',
+            decoration: InputDecoration(labelText: tr('PIN code')),
+            validator: (v) => RegExp(r'^[1-9]\d{5}$').hasMatch(v ?? '') ? null : tr('6 digits'),
           ),
         ]),
       );
@@ -357,9 +358,10 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
         key: _forms[3],
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'SAVINGS', label: Text('Savings'), icon: Icon(Icons.savings)),
-              ButtonSegment(value: 'CURRENT', label: Text('Current / Merchant'), icon: Icon(Icons.storefront)),
+            segments: [
+              ButtonSegment(value: 'SAVINGS', label: Text(tr('Savings')), icon: const Icon(Icons.savings)),
+              ButtonSegment(
+                  value: 'CURRENT', label: Text(tr('Current / Merchant')), icon: const Icon(Icons.storefront)),
             ],
             selected: {_type},
             onSelectionChanged: (s) => setState(() => _type = s.first),
@@ -368,33 +370,33 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             _gap(),
             TextFormField(
               controller: _business,
-              decoration: const InputDecoration(labelText: 'Shop / business name'),
-              validator: (v) => (v?.trim().length ?? 0) < 3 ? 'Required for merchant account' : null,
+              decoration: InputDecoration(labelText: tr('Shop / business name')),
+              validator: (v) => (v?.trim().length ?? 0) < 3 ? tr('Required for merchant account') : null,
             ),
           ],
           _gap(),
-          if (_branches.isEmpty) _notLoaded('branch'),
+          if (_branches.isEmpty) _notLoaded(tr('Could not load the branch list from the RakshakPay server.')),
           DropdownButtonFormField<Branch>(
             initialValue: _branch,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Home branch'),
+            decoration: InputDecoration(labelText: tr('Home branch')),
             items: [
               for (final b in _branches)
                 DropdownMenuItem(value: b, child: Text('${b.name}  (${b.ifsc})', overflow: TextOverflow.ellipsis)),
             ],
             onChanged: (v) => setState(() => _branch = v),
-            validator: (v) => v == null ? 'Select branch' : null,
+            validator: (v) => v == null ? tr('Select branch') : null,
           ),
           _gap(),
           TextFormField(
             controller: _deposit,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Opening cash deposit (fake ₹)', prefixText: '₹ '),
+            decoration: InputDecoration(labelText: tr('Opening cash deposit (fake ₹)'), prefixText: '₹ '),
             validator: (v) {
               if (v == null || v.isEmpty) return null;
               final p = parsePaise(v);
-              if (p == null) return 'Invalid amount';
-              if (p > 10_00_000 * 100) return 'Max ₹10,00,000';
+              if (p == null) return tr('Invalid amount');
+              if (p > 10_00_000 * 100) return tr('Max ₹10,00,000');
               return null;
             },
           ),
@@ -407,15 +409,15 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
           TextFormField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Login password (min 6 characters)'),
-            validator: (v) => (v?.length ?? 0) < 6 ? 'At least 6 characters' : null,
+            decoration: InputDecoration(labelText: tr('Login password (min 6 characters)')),
+            validator: (v) => (v?.length ?? 0) < 6 ? tr('At least 6 characters') : null,
           ),
           _gap(),
           TextFormField(
             controller: _password2,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Confirm password'),
-            validator: (v) => v != _password.text ? 'Passwords do not match' : null,
+            decoration: InputDecoration(labelText: tr('Confirm password')),
+            validator: (v) => v != _password.text ? tr('Passwords do not match') : null,
           ),
           _gap(),
           TextFormField(
@@ -424,7 +426,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: '4-digit transaction PIN (MPIN)'),
+            decoration: InputDecoration(labelText: tr('4-digit transaction PIN (MPIN)')),
             validator: _pinValidator,
           ),
           _gap(),
@@ -434,7 +436,7 @@ class _OpenAccountScreenState extends State<OpenAccountScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: '4-digit debit card / ATM PIN'),
+            decoration: InputDecoration(labelText: tr('4-digit debit card / ATM PIN')),
             validator: _pinValidator,
           ),
         ]),
@@ -455,14 +457,14 @@ class _AccountCreatedScreen extends StatelessWidget {
             icon: const Icon(Icons.copy, size: 18),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
-              showInfo(context, '$label copied');
+              showInfo(context, tr('{label} copied', {'label': label}));
             },
           ),
         );
 
     final card = data['card_no'] as String;
     return Scaffold(
-      appBar: AppBar(title: const Text('Account opened'), automaticallyImplyLeading: false),
+      appBar: AppBar(title: Text(tr('Account opened')), automaticallyImplyLeading: false),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -472,18 +474,18 @@ class _AccountCreatedScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Card(
             child: Column(children: [
-              row('Customer ID (for login)', data['cif']),
-              row('Account number', data['account_no']),
-              row('IFSC', data['ifsc']),
-              row('Branch', data['branch']['name']),
-              row('Debit card', '${card.substring(0, 4)} ${card.substring(4, 8)} ${card.substring(8, 12)} ${card.substring(12)}'),
+              row(tr('Customer ID (for login)'), data['cif']),
+              row(tr('Account number'), data['account_no']),
+              row(tr('IFSC'), data['ifsc']),
+              row(tr('Branch'), data['branch']['name']),
+              row(tr('Debit card'), '${card.substring(0, 4)} ${card.substring(4, 8)} ${card.substring(8, 12)} ${card.substring(12)}'),
             ]),
           ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () => Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (_) => LoginScreen(prefillId: data['cif']))),
-            child: const Text('Login now'),
+            child: Text(tr('Login now')),
           ),
         ],
       ),

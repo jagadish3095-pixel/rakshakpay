@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'app_settings.dart';
 
 /// Full-screen PIN pad shown when an app opens or returns from the background.
 /// Used by the bank apps (MPIN) and the UPI app (passcode).
@@ -72,13 +73,15 @@ class _PinLockScreenState extends State<PinLockScreen> {
       if (e.statusCode == 401) {
         _wrong++;
         if (_wrong >= widget.maxTries) {
-          return widget.onLogout(reason: 'Too many wrong attempts. Please log in again.');
+          return widget.onLogout(reason: tr('Too many wrong attempts. Please log in again.'));
         }
       }
       if (!mounted) return;
       setState(() {
         _entered = '';
-        _error = e.statusCode == 401 ? '${e.message}. ${widget.maxTries - _wrong} tries left.' : e.message;
+        _error = e.statusCode == 401
+            ? tr('{message}. {count} tries left.', {'message': tr(e.message), 'count': widget.maxTries - _wrong})
+            : tr(e.message);
       });
     } finally {
       if (mounted) setState(() => _checking = false);
@@ -96,10 +99,10 @@ class _PinLockScreenState extends State<PinLockScreen> {
             const Spacer(),
             widget.logo,
             const SizedBox(height: 16),
-            Text(_name == null ? 'Welcome back' : 'Welcome back, ${_name!.split(' ').first}',
+            Text(_name == null ? tr('Welcome back') : tr('Welcome back, {name}', {'name': _name!.split(' ').first}),
                 style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            Text(widget.prompt, style: const TextStyle(color: Colors.white70)),
+            Text(tr(widget.prompt), style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               for (var i = 0; i < 4; i++)
@@ -132,7 +135,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
             ),
             TextButton(
               onPressed: () => widget.onLogout(),
-              child: const Text('Log out / switch user', style: TextStyle(color: Colors.white70)),
+              child: Text(tr('Log out / switch user'), style: const TextStyle(color: Colors.white70)),
             ),
             const SizedBox(height: 8),
           ]),

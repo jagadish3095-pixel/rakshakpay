@@ -2,20 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'api.dart';
+import 'app_settings.dart';
 import 'location.dart';
-import 'models.dart';
 
+/// Translates an error or server message for display. Form errors from the server look like
+/// "Mobile: Enter a valid 10-digit Indian mobile number"; when the whole text has no translation,
+/// the parts before and after the first ": " are translated separately.
+String trMessage(Object message) {
+  final text = message.toString();
+  final whole = tr(text);
+  if (whole != text) return whole;
+  final i = text.indexOf(': ');
+  if (i <= 0) return whole;
+  return '${tr(text.substring(0, i))}: ${tr(text.substring(i + 2))}';
+}
+
+/// Shows an error in a red bar. For an [ApiException] the text is the server's `detail`
+/// message; it is translated when the translation tables know it (already translated text
+/// passed by an app does not match any key and is shown as it is).
 void showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text(error.toString()),
-    backgroundColor: Colors.red.shade700,
-    behavior: SnackBarBehavior.floating,
-  ));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(trMessage(error)),
+      backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }
 
 void showInfo(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(message)), behavior: SnackBarBehavior.floating));
 }
 
 /// Forces typed letters to capitals (PAN, IFSC).
@@ -33,31 +49,36 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      'ACTIVE' => ('Active', Colors.green),
-      'SUSPECTED_MULE' => ('Under verification', Colors.orange),
-      'CONFIRMED_MULE' => ('Blocked – fraud', Colors.red),
+      'ACTIVE' => (tr('Active'), Colors.green),
+      'SUSPECTED_MULE' => (tr('Under verification'), Colors.orange),
+      'CONFIRMED_MULE' => (tr('Blocked – fraud'), Colors.red),
       _ => (status, Colors.grey),
     };
+    final dark = isDark(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      // Solid light background so it reads on both white and coloured cards.
-      decoration: BoxDecoration(color: Color.lerp(color, Colors.white, 0.85), borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(color: color.shade800, fontWeight: FontWeight.w600, fontSize: 12)),
+      // Solid (opaque) background so it reads on both plain and coloured cards; a dark tint at night.
+      decoration: BoxDecoration(color: chipBg(context, color), borderRadius: BorderRadius.circular(20)),
+      child: Text(
+        label,
+        style: TextStyle(color: dark ? color.shade200 : color.shade800, fontWeight: FontWeight.w600, fontSize: 12),
+      ),
     );
   }
 }
 
 /// Asks for a 4-digit PIN. Returns null if cancelled.
-Future<String?> askPin(BuildContext context, {String title = 'Enter 4-digit PIN', String? subtitle}) {
+/// [title] defaults to "Enter 4-digit PIN"; [title] and [subtitle] are translated when possible.
+Future<String?> askPin(BuildContext context, {String? title, String? subtitle}) {
   final controller = TextEditingController();
   return showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title),
+      title: Text(tr(title ?? 'Enter 4-digit PIN')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (subtitle != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(subtitle)),
+          if (subtitle != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(tr(subtitle))),
           TextField(
             controller: controller,
             autofocus: true,
@@ -73,93 +94,161 @@ Future<String?> askPin(BuildContext context, {String title = 'Enter 4-digit PIN'
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
         FilledButton(
           onPressed: () => controller.text.length == 4 ? Navigator.pop(ctx, controller.text) : null,
-          child: const Text('Confirm'),
+          child: Text(tr('Confirm')),
         ),
       ],
     ),
   );
 }
 
-/// Server address + demo location. Shared by every RakshakPay app.
+/// Night mode, language, location permission and server address. Shared by every RakshakPay app.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.api, required this.location});
+  const SettingsScreen({super.key, required this.api, required this.location, this.makesPayments = true});
   final RakshakApi api;
   final LocationService location;
+
+  /// Shows the location section (location is mandatory for payments). Off for apps that never pay.
+  final bool makesPayments;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   late final _url = TextEditingController(text: widget.api.baseUrl);
-  List<City> _cities = [];
-  String? _demoCity;
   String _status = '';
+  GpsProblem? _gps;
+  bool _gpsChecked = false;
 
   @override
   void initState() {
     super.initState();
-    _demoCity = widget.location.demoCity;
-    _loadCities();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.makesPayments) _checkGps();
   }
 
-  Future<void> _loadCities() async {
-    try {
-      final c = await widget.location.cities();
-      if (mounted) setState(() => _cities = c);
-    } catch (_) {}
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Coming back from Android's settings: show the new permission state.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.makesPayments) _checkGps();
+  }
+
+  Future<void> _checkGps() async {
+    final p = await widget.location.check();
+    if (!mounted) return;
+    setState(() {
+      _gps = p;
+      _gpsChecked = true;
+    });
   }
 
   Future<void> _test() async {
     await widget.api.setBaseUrl(_url.text);
-    setState(() => _status = 'Checking…');
+    setState(() => _status = tr('Checking…'));
     try {
       await widget.api.get('/');
-      setState(() => _status = '✅ Connected to RakshakPay server');
-      _loadCities();
+      setState(() => _status = '✅ ${tr('Connected to RakshakPay server')}');
     } catch (e) {
-      setState(() => _status = '❌ $e');
+      setState(() => _status = '❌ ${trMessage(e)}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Server address', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          const Text('The laptop running the backend, e.g. http://192.168.1.5:8000'),
-          const SizedBox(height: 8),
-          TextField(controller: _url, keyboardType: TextInputType.url,
-              decoration: const InputDecoration(border: OutlineInputBorder())),
-          const SizedBox(height: 8),
-          FilledButton.icon(onPressed: _test, icon: const Icon(Icons.wifi), label: const Text('Save & test')),
-          if (_status.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_status)),
-          const Divider(height: 40),
-          Text('Demo location', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          const Text('Every transaction records where this phone is. In a demo all phones are in one '
-              'room, so you can pretend this phone is in another city.'),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String?>(
-            initialValue: _demoCity,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Use real GPS')),
-              for (final c in _cities) DropdownMenuItem(value: c.name, child: Text('${c.name}, ${c.state}')),
+    final heading = Theme.of(context).textTheme.titleMedium;
+    return ListenableBuilder(
+      listenable: appSettings,
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(title: Text(tr('Settings'))),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(tr('Night mode'), style: heading),
+            const SizedBox(height: 8),
+            SegmentedButton<ThemeMode>(
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: const Icon(Icons.brightness_auto),
+                  label: Text(tr('Auto')),
+                ),
+                ButtonSegment(value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: Text(tr('Day'))),
+                ButtonSegment(value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: Text(tr('Night'))),
+              ],
+              selected: {appSettings.themeMode},
+              onSelectionChanged: (s) => appSettings.setThemeMode(s.first),
+            ),
+            const SizedBox(height: 4),
+            Text(tr("Auto follows the phone's dark theme setting."), style: TextStyle(color: muted(context))),
+            const Divider(height: 40),
+            Text(tr('Language'), style: heading),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: [for (final e in kLanguages.entries) ButtonSegment(value: e.key, label: Text(e.value))],
+              selected: {appSettings.language},
+              onSelectionChanged: (s) => appSettings.setLanguage(s.first),
+            ),
+            if (widget.makesPayments) ...[
+              const Divider(height: 40),
+              Text(tr('Location'), style: heading),
+              const SizedBox(height: 4),
+              Text(
+                tr(
+                  'Location is mandatory for payments. Every payment records where the phone was, so that '
+                  'money stolen by fraudsters can be traced.',
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_gpsChecked)
+                Card(
+                  color: _gps == null ? softBg(context, Colors.green) : softBg(context, Colors.red),
+                  child: ListTile(
+                    leading: Icon(
+                      _gps == null ? Icons.location_on : Icons.location_off,
+                      color: strong(context, _gps == null ? Colors.green : Colors.red),
+                    ),
+                    title: Text(switch (_gps) {
+                      null => tr('Location allowed'),
+                      GpsProblem.serviceOff => tr('Location (GPS) is turned off'),
+                      GpsProblem.denied || GpsProblem.deniedForever => tr('Location permission not given'),
+                      GpsProblem.failed => tr('Location not available'),
+                    }),
+                    trailing: _gps == null
+                        ? null
+                        : FilledButton(
+                            onPressed: () async {
+                              await widget.location.askPermission();
+                              _checkGps();
+                            },
+                            child: Text(tr('Allow')),
+                          ),
+                  ),
+                ),
             ],
-            onChanged: (v) async {
-              await widget.location.setDemoCity(v);
-              setState(() => _demoCity = v);
-            },
-          ),
-        ],
+            const Divider(height: 40),
+            Text(tr('Server address'), style: heading),
+            const SizedBox(height: 4),
+            Text(tr('The computer running the RakshakPay server, e.g. https://rakshakpay.onrender.com')),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _url,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(onPressed: _test, icon: const Icon(Icons.wifi), label: Text(tr('Save & test'))),
+            if (_status.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_status)),
+          ],
+        ),
       ),
     );
   }

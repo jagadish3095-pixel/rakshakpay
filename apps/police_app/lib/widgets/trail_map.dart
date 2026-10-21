@@ -24,8 +24,11 @@ LatLng? _point(dynamic place) =>
 
 /// Where each account was when it handled the victim's money.
 ///
-/// Senders: the place of their first (non-ATM) payment in the trail (phone GPS / demo city).
-/// Otherwise: last place the account was used, or its home branch.
+/// Every payment carries the payer's phone GPS, so:
+/// senders are shown where their phone was for their first (non-ATM) payment in the trail;
+/// a shop is shown where the buyer's phone was when paying it (the buyer was at the counter);
+/// others at the last place the account was used (phone or ATM). The home branch is only a
+/// fallback, and the online exchange always sits at its branch.
 Map<String, LatLng> nodePositions(Map<String, dynamic> d) {
   final edges = (d['edges'] as List).cast<Map<String, dynamic>>();
   final nodes = (d['nodes'] as List).cast<Map<String, dynamic>>();
@@ -33,10 +36,12 @@ Map<String, LatLng> nodePositions(Map<String, dynamic> d) {
   for (final n in nodes) {
     final no = n['account_no'] as String;
     final out = edges.where((e) => e['from_account'] == no && e['kind'] != 'ATM' && e['location'] != null);
-    final role = n['role'];
-    pos[no] = (role == 'MERCHANT' || role == 'EXCHANGE')
-        ? _point(n['home'])!
-        : _point(out.firstOrNull?['location']) ?? _point(n['last_seen']) ?? _point(n['home'])!;
+    final paidIn = edges.where((e) => e['to_account'] == no && e['location'] != null);
+    pos[no] = switch (n['role']) {
+      'EXCHANGE' => _point(n['home'])!,
+      'MERCHANT' => _point(paidIn.firstOrNull?['location']) ?? _point(n['home'])!,
+      _ => _point(out.firstOrNull?['location']) ?? _point(n['last_seen']) ?? _point(n['home'])!,
+    };
   }
   // Spread out accounts that sit on (almost) the same spot so every pin is visible.
   final groups = <String, List<String>>{};
@@ -119,6 +124,16 @@ class _TrailMapState extends State<TrailMap> {
     return (from, to);
   }
 
+  /// Display name of a hop kind code sent by the server.
+  static String _kindLabel(Object? kind) => switch (kind) {
+        'TRANSFER' => tr('Transfer'),
+        'ATM' => tr('ATM cash'),
+        'MERCHANT' => tr('Merchant purchase'),
+        'CRYPTO' => tr('To crypto exchange'),
+        'RETURN' => tr('Returned'),
+        _ => '$kind',
+      };
+
   static Color _edgeColor(String kind) => switch (kind) {
         'ATM' => Colors.black87,
         'MERCHANT' => Colors.green.shade700,
@@ -168,16 +183,16 @@ class _TrailMapState extends State<TrailMap> {
         ),
       ),
       Container(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(children: [
-          FilledButton.icon(onPressed: _play, icon: const Icon(Icons.play_arrow), label: const Text('Play')),
+          FilledButton.icon(onPressed: _play, icon: const Icon(Icons.play_arrow), label: Text(tr('Play'))),
           Expanded(
             child: Slider(
               value: _shown.toDouble(),
               max: _edges.length.toDouble(),
               divisions: max(1, _edges.length),
-              label: '$_shown / ${_edges.length} hops',
+              label: tr('{shown} / {total} hops', {'shown': _shown, 'total': _edges.length}),
               onChanged: (v) {
                 _player?.cancel();
                 setState(() => _shown = v.round());
@@ -188,8 +203,8 @@ class _TrailMapState extends State<TrailMap> {
             width: 220,
             child: Text(
               current == null
-                  ? 'Start: victim pays the scammer'
-                  : '${formatDateTime(current['date'])}\n${rupees(current['amount'])} • ${current['kind']}'
+                  ? tr('Start: victim pays the scammer')
+                  : '${formatDateTime(current['date'])}\n${rupees(current['amount'])} • ${_kindLabel(current['kind'])}'
                       '${current['location'] != null ? ' • ${current['location']['label']}' : ''}',
               style: const TextStyle(fontSize: 12),
             ),
@@ -215,7 +230,9 @@ class _TrailMapState extends State<TrailMap> {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4),
               border: Border.all(color: _edgeColor(e['kind']))),
-          child: Text(rupees(e['amount'], decimals: false), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+          // white label on the (always light) map, so the text stays dark at night too
+          child: Text(rupees(e['amount'], decimals: false),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87)),
         ),
       ]),
     );
@@ -259,15 +276,16 @@ class _Legend extends StatelessWidget {
             Text(t, style: const TextStyle(fontSize: 11)),
           ]),
         );
+    // The legend sits on the page, so the swatches use night-friendly shades where needed.
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: Wrap(children: [
-        item(Colors.red.shade600, 'Transfer to mule'),
-        item(Colors.green.shade700, 'Merchant purchase'),
-        item(Colors.purple, 'To crypto exchange'),
-        item(Colors.black87, 'ATM cash'),
-        item(Colors.blue.shade700, 'Victim pin'),
+        item(Colors.red.shade600, tr('Transfer to mule')),
+        item(strong(context, Colors.green), tr('Merchant purchase')),
+        item(isDark(context) ? Colors.purple.shade300 : Colors.purple, tr('To crypto exchange')),
+        item(isDark(context) ? Colors.white70 : Colors.black87, tr('ATM cash')),
+        item(strong(context, Colors.blue), tr('Victim pin')),
       ]),
     );
   }
@@ -277,23 +295,23 @@ class _Legend extends StatelessWidget {
 void showNodeDetails(BuildContext context, Map<String, dynamic> n) {
   String r(String k) => rupees(n[k] as int);
   final rows = <(String, String)>[
-    ('Role', roleLabel(n['role'])),
-    ('Bank', '${n['bank']} • ${n['branch']} (${n['ifsc']})'),
-    ('Account', n['account_no']),
-    ('PAN / mobile', '${n['pan']} • ${n['mobile']}'),
-    ('Account status', n['status']),
-    ('Victim money received', r('received')),
-    if (n['forwarded'] > 0) ('Forwarded to others', r('forwarded')),
-    if (n['held'] > 0) ('Held (lien)', r('held')),
-    if (n['spent_merchant'] > 0) ('Spent at merchant', r('spent_merchant')),
-    if (n['cashed_out'] > 0) ('Withdrawn at ATM', r('cashed_out')),
-    if (n['to_crypto'] > 0) ('Sent to crypto exchange', r('to_crypto')),
-    if (n['crypto_frozen'] > 0) ('Crypto frozen at exchange', r('crypto_frozen')),
-    if (n['crypto_escaped'] > 0) ('Crypto sent to outside wallets', r('crypto_escaped')),
-    if (n['recovery_approved'] > 0) ('Court-approved recovery lien', r('recovery_approved')),
-    if (n['released'] + n['crypto_released'] > 0) ('Returned to victim', rupees(n['released'] + n['crypto_released'])),
-    ('Current balance / lien', '${r('balance')} / ${r('lien_amount')}'),
-    if (n['last_seen'] != null) ('Last used at', '${n['last_seen']['label']} (${formatDateTime(n['last_seen']['date'])})'),
+    (tr('Role'), roleLabel(n['role'])),
+    (tr('Bank'), '${n['bank']} • ${n['branch']} (${n['ifsc']})'),
+    (tr('Account'), n['account_no']),
+    (tr('PAN / mobile'), '${n['pan']} • ${n['mobile']}'),
+    (tr('Account status'), n['status']),
+    (tr('Victim money received'), r('received')),
+    if (n['forwarded'] > 0) (tr('Forwarded to others'), r('forwarded')),
+    if (n['held'] > 0) (tr('Held (lien)'), r('held')),
+    if (n['spent_merchant'] > 0) (tr('Spent at merchant'), r('spent_merchant')),
+    if (n['cashed_out'] > 0) (tr('Withdrawn at ATM'), r('cashed_out')),
+    if (n['to_crypto'] > 0) (tr('Sent to crypto exchange'), r('to_crypto')),
+    if (n['crypto_frozen'] > 0) (tr('Crypto frozen at exchange'), r('crypto_frozen')),
+    if (n['crypto_escaped'] > 0) (tr('Crypto sent to outside wallets'), r('crypto_escaped')),
+    if (n['recovery_approved'] > 0) (tr('Court-approved recovery lien'), r('recovery_approved')),
+    if (n['released'] + n['crypto_released'] > 0) (tr('Returned to victim'), rupees(n['released'] + n['crypto_released'])),
+    (tr('Current balance / lien'), '${r('balance')} / ${r('lien_amount')}'),
+    if (n['last_seen'] != null) (tr('Last used at'), '${n['last_seen']['label']} (${formatDateTime(n['last_seen']['date'])})'),
   ];
   showModalBottomSheet(
     context: context,
@@ -315,7 +333,7 @@ void showNodeDetails(BuildContext context, Map<String, dynamic> n) {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                SizedBox(width: 190, child: Text(k, style: const TextStyle(color: Colors.black54))),
+                SizedBox(width: 190, child: Text(k, style: TextStyle(color: muted(ctx)))),
                 Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.w600))),
               ]),
             ),

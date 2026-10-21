@@ -49,10 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text('RakshakPay Business'),
         actions: [
           IconButton(
-            tooltip: 'Settings',
+            tooltip: tr('Settings'),
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location))),
+                context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location, makesPayments: false))),
           ),
         ],
       ),
@@ -61,12 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const Center(child: RakshakLogo(size: 90)),
           const SizedBox(height: 12),
-          const Text('Payment soundbox for your shop', textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16)),
+          Text(tr('Payment soundbox for your shop'), textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 4),
-          const Text('Log in with your RakshakPay mobile number and passcode. '
-              'Your shop must have a Current (Merchant) account linked in RakshakPay.',
-              textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+          Text(tr('Log in with your RakshakPay mobile number and passcode. '
+              'Your shop must have a Current (Merchant) account linked in RakshakPay.'),
+              textAlign: TextAlign.center, style: TextStyle(color: muted(context))),
           if (_saved.isNotEmpty) ...[
             const SizedBox(height: 20),
             for (final s in _saved)
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Mobile number', prefixText: '+91 '),
+            decoration: InputDecoration(labelText: tr('Mobile number'), prefixText: '+91 '),
           ),
           TextField(
             controller: _pass,
@@ -101,14 +101,14 @@ class _LoginScreenState extends State<LoginScreen> {
             maxLength: 4,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'RakshakPay passcode'),
+            decoration: InputDecoration(labelText: tr('RakshakPay passcode')),
             onSubmitted: (_) => _login(_mobile.text, _pass.text),
           ),
           const SizedBox(height: 8),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
             onPressed: _busy ? null : () => _login(_mobile.text, _pass.text),
-            child: Text(_busy ? 'Logging in…' : 'Log in'),
+            child: Text(_busy ? tr('Logging in…') : tr('Log in')),
           ),
         ],
       ),

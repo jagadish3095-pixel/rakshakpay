@@ -15,12 +15,13 @@ class SecurityScreen extends StatelessWidget {
     Future<void> open(Widget screen) => Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Security settings')),
+      // ChangeSecretScreen translates its title and `what` itself (keys are in l10n.dart).
+      appBar: AppBar(title: Text(tr('Security settings'))),
       body: ListView(children: [
         ListTile(
           leading: const Icon(Icons.password),
-          title: const Text('Change login password'),
-          subtitle: const Text('Used to log in to this app'),
+          title: Text(tr('Change login password')),
+          subtitle: Text(tr('Used to log in to this app')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => open(ChangeSecretScreen(
             title: 'Change login password',
@@ -36,8 +37,8 @@ class SecurityScreen extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.pin),
-          title: const Text('Change MPIN'),
-          subtitle: const Text('4-digit PIN for payments and opening the app'),
+          title: Text(tr('Change MPIN')),
+          subtitle: Text(tr('4-digit PIN for payments and opening the app')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => open(ChangeSecretScreen(
             title: 'Change MPIN',
@@ -48,8 +49,8 @@ class SecurityScreen extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.atm),
-          title: const Text('Change ATM / debit card PIN'),
-          subtitle: Text('Card ending ${_account.cardNo.substring(12)}'),
+          title: Text(tr('Change ATM / debit card PIN')),
+          subtitle: Text(tr('Card ending {last4}', {'last4': _account.cardNo.substring(12)})),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => open(ChangeSecretScreen(
             title: 'Change ATM PIN',
@@ -58,9 +59,10 @@ class SecurityScreen extends StatelessWidget {
                 api.post('/api/accounts/${_account.accountNo}/card-pin', {'current': current, 'new': next}),
           )),
         ),
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('Your UPI PIN is set and changed in the RakshakPay app.', style: TextStyle(color: Colors.black54)),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(tr('Your UPI PIN is set and changed in the RakshakPay app.'),
+              style: TextStyle(color: muted(context))),
         ),
       ]),
     );

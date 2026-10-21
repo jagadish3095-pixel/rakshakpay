@@ -13,15 +13,15 @@ class SecurityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Future<void> open(Widget s) => Navigator.push(context, MaterialPageRoute(builder: (_) => s));
     return Scaffold(
-      appBar: AppBar(title: const Text('Security')),
+      appBar: AppBar(title: Text(tr('Security'))),
       body: ListView(children: [
         ListTile(
           leading: const Icon(Icons.lock),
-          title: const Text('Change app passcode'),
-          subtitle: const Text('4 digits to open RakshakPay (also used by RakshakPay Business)'),
+          title: Text(tr('Change app passcode')),
+          subtitle: Text(tr('4 digits to open RakshakPay (also used by RakshakPay Business)')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => open(ChangeSecretScreen(
-            title: 'Change app passcode',
+            title: tr('Change app passcode'),
             what: 'passcode',
             submit: (current, next) async {
               await api.post('/api/upi/passcode', {'current': current, 'new': next});
@@ -30,9 +30,9 @@ class SecurityScreen extends StatelessWidget {
           )),
         ),
         const Divider(),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Text('UPI PIN (for each bank account)', style: TextStyle(fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(tr('UPI PIN (for each bank account)'), style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
         for (final v in profile.vpas)
           Card(
@@ -41,22 +41,23 @@ class SecurityScreen extends StatelessWidget {
               ListTile(
                 leading: BankLogo(BankBrand.byCode(v.bankCode), size: 36),
                 title: Text(BankBrand.byCode(v.bankCode).name),
-                subtitle: Text('A/c ${v.accountNoMasked} • ${v.address}'),
+                subtitle: Text('${tr('A/c {account}', {'account': v.accountNoMasked})} • ${v.address}'),
               ),
               OverflowBar(alignment: MainAxisAlignment.end, children: [
                 TextButton(
                   onPressed: () => open(ChangeSecretScreen(
-                    title: 'Change UPI PIN',
+                    title: tr('Change UPI PIN'),
                     what: 'UPI PIN',
-                    help: '${BankBrand.byCode(v.bankCode).name} A/c ${v.accountNoMasked}',
+                    help: tr('{bank} A/c {account}',
+                        {'bank': BankBrand.byCode(v.bankCode).name, 'account': v.accountNoMasked}),
                     submit: (current, next) =>
                         api.post('/api/upi/vpas/${v.address}/pin', {'current': current, 'new': next}),
                   )),
-                  child: const Text('Change UPI PIN'),
+                  child: Text(tr('Change UPI PIN')),
                 ),
                 TextButton(
                   onPressed: () => open(_ForgotUpiPinScreen(vpa: v)),
-                  child: const Text('Forgot UPI PIN?'),
+                  child: Text(tr('Forgot UPI PIN?')),
                 ),
               ]),
             ]),
@@ -90,7 +91,7 @@ class _ForgotUpiPinScreenState extends State<_ForgotUpiPinScreen> {
       await api.post('/api/upi/vpas/${widget.vpa.address}/pin',
           {'new': _pin.text, 'card_last6': _last6.text, 'card_expiry': _expiry.text});
       if (!mounted) return;
-      showInfo(context, 'New UPI PIN set');
+      showInfo(context, tr('New UPI PIN set'));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) showError(context, e);
@@ -112,35 +113,36 @@ class _ForgotUpiPinScreenState extends State<_ForgotUpiPinScreen> {
           validator: v,
         );
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset UPI PIN')),
+      appBar: AppBar(title: Text(tr('Reset UPI PIN'))),
       body: Form(
         key: _form,
         child: ListView(padding: const EdgeInsets.all(20), children: [
-          Text('${bank.name} A/c ${widget.vpa.accountNoMasked}\n'
-              'Enter your debit card details (see "Debit card" in your bank app).'),
+          Text('${tr('{bank} A/c {account}', {'bank': bank.name, 'account': widget.vpa.accountNoMasked})}\n'
+              '${tr('Enter your debit card details (see "Debit card" in your bank app).')}'),
           const SizedBox(height: 12),
           TextFormField(
             controller: _last6,
             maxLength: 6,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Last 6 digits of debit card'),
-            validator: (v) => (v?.length ?? 0) == 6 ? null : 'Enter 6 digits',
+            decoration: InputDecoration(labelText: tr('Last 6 digits of debit card')),
+            validator: (v) => (v?.length ?? 0) == 6 ? null : tr('Enter 6 digits'),
           ),
           TextFormField(
             controller: _expiry,
             maxLength: 5,
             keyboardType: TextInputType.number,
             inputFormatters: [ExpiryFormatter()],
-            decoration: const InputDecoration(labelText: 'Expiry (valid thru)', hintText: 'MM/YY'),
-            validator: (v) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(v ?? '') ? null : 'Format MM/YY',
+            decoration: InputDecoration(labelText: tr('Expiry (valid thru)'), hintText: 'MM/YY'),
+            validator: (v) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(v ?? '') ? null : tr('Format MM/YY'),
           ),
-          pinField(_pin, 'New 4-digit UPI PIN', (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : 'Enter 4 digits'),
-          pinField(_pin2, 'Confirm UPI PIN', (v) => v != _pin.text ? 'Does not match' : null),
+          pinField(_pin, tr('New 4-digit UPI PIN'),
+              (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : tr('Enter 4 digits')),
+          pinField(_pin2, tr('Confirm UPI PIN'), (v) => v != _pin.text ? tr('Does not match') : null),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
             onPressed: _busy ? null : _reset,
-            child: Text(_busy ? 'Saving…' : 'Set new UPI PIN'),
+            child: Text(_busy ? tr('Saving…') : tr('Set new UPI PIN')),
           ),
         ]),
       ),

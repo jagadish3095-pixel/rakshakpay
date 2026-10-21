@@ -17,6 +17,6 @@ void main() {
     final pos = nodePositions(detail);
     expect(pos['V']!.latitude, 13.0); // victim's phone location at payment time
     expect(pos['M']!.latitude, 23.9); // mule's location when forwarding (not home branch)
-    expect(pos['S']!.latitude, 26.9); // merchants stay at their shop branch
+    expect(pos['S']!.latitude, 23.9); // shop: where the buyer's phone was when paying it
   });
 }

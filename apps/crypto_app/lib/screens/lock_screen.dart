@@ -16,7 +16,7 @@ class LockScreen extends StatelessWidget {
       color: kBg,
       accent: kGold,
       logo: const CoinVaultLogo(size: 80),
-      prompt: 'Enter your 4-digit CoinVault PIN',
+      prompt: tr('Enter your 4-digit CoinVault PIN'),
       loadName: () async => (await loadProfile()).name,
       verify: (pin) => api.post('/api/crypto/unlock', {'pin': pin}),
       onUnlocked: () => onLaunch

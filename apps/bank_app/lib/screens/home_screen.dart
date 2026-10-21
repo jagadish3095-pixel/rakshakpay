@@ -77,15 +77,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final amount = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Demo: cash deposit at branch'),
+        title: Text(tr('Demo: cash deposit at branch')),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(prefixText: '₹ ', labelText: 'Fake cash amount'),
+          decoration: InputDecoration(prefixText: '₹ ', labelText: tr('Fake cash amount')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, parsePaise(controller.text)), child: const Text('Deposit')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, parsePaise(controller.text)), child: Text(tr('Deposit'))),
         ],
       ),
     );
@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Row(children: [BankLogo(brand, size: 32), const SizedBox(width: 10), Text(brand.name)]),
         actions: [
           IconButton(
-            tooltip: 'Notices',
+            tooltip: tr('Notices'),
             icon: const Icon(Icons.notifications),
             onPressed: () => _open(NoticesScreen(api: api, path: '/api/notices')),
           ),
@@ -116,11 +116,11 @@ class _HomeScreenState extends State<HomeScreen> {
               'security' => _customer == null ? null : _open(SecurityScreen(customer: _customer!)),
               _ => _logout(),
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'security', child: Text('Security (password, MPIN, ATM PIN)')),
-              PopupMenuItem(value: 'deposit', child: Text('Demo: deposit cash')),
-              PopupMenuItem(value: 'settings', child: Text('Settings')),
-              PopupMenuItem(value: 'logout', child: Text('Logout')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'security', child: Text(tr('Security (password, MPIN, ATM PIN)'))),
+              PopupMenuItem(value: 'deposit', child: Text(tr('Demo: deposit cash'))),
+              PopupMenuItem(value: 'settings', child: Text(tr('Settings'))),
+              PopupMenuItem(value: 'logout', child: Text(tr('Logout'))),
             ],
           ),
         ],
@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('Namaste, ${_customer!.fullName.split(' ').first}',
+                  Text(tr('Namaste, {name}', {'name': _customer!.fullName.split(' ').first}),
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
                   if (!acc.isActive)
@@ -149,29 +149,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
                     children: [
-                      _Action(Icons.send, 'Send money', () => _open(TransferScreen(account: acc))),
-                      _Action(Icons.menu_book, 'Passbook', () => _open(PassbookScreen(accountNo: acc.accountNo))),
-                      _Action(Icons.atm, 'ATM cash', () => _open(AtmListScreen(account: acc))),
-                      _Action(Icons.credit_card, 'Debit card', () => _open(CardScreen(account: acc))),
-                      _Action(Icons.person, 'Profile', () => _open(ProfileScreen(customer: _customer!))),
-                      _Action(Icons.add_card, 'Demo deposit', _demoDeposit),
-                      _Action(Icons.report, 'Report fraud\n(1930)',
+                      _Action(Icons.send, tr('Send money'), () => _open(TransferScreen(account: acc))),
+                      _Action(Icons.menu_book, tr('Passbook'), () => _open(PassbookScreen(accountNo: acc.accountNo))),
+                      _Action(Icons.atm, tr('ATM cash'), () => _open(AtmListScreen(account: acc))),
+                      _Action(Icons.credit_card, tr('Debit card'), () => _open(CardScreen(account: acc))),
+                      _Action(Icons.person, tr('Profile'), () => _open(ProfileScreen(customer: _customer!))),
+                      _Action(Icons.add_card, tr('Demo deposit'), _demoDeposit),
+                      _Action(Icons.report, tr('Report fraud\n(1930)'),
                           () => _open(PassbookScreen(accountNo: acc.accountNo, reportMode: true))),
-                      _Action(Icons.assignment, 'My complaints',
+                      _Action(Icons.assignment, tr('My complaints'),
                           () => _open(ComplaintsScreen(api: api, path: '/api/complaints'))),
-                      _Action(Icons.notifications, 'Notices',
+                      _Action(Icons.notifications, tr('Notices'),
                           () => _open(NoticesScreen(api: api, path: '/api/notices'))),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Row(children: [
-                    Text('Recent transactions', style: Theme.of(context).textTheme.titleMedium),
+                    Text(tr('Recent transactions'), style: Theme.of(context).textTheme.titleMedium),
                     const Spacer(),
                     TextButton(
                         onPressed: () => _open(PassbookScreen(accountNo: acc.accountNo)),
-                        child: const Text('View all')),
+                        child: Text(tr('View all'))),
                   ]),
-                  if (_recent.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('No transactions yet')),
+                  if (_recent.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(tr('No transactions yet'))),
                   for (final e in _recent) EntryTile(e),
                 ],
               ),
@@ -197,21 +197,24 @@ class _BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('${acc.typeLabel} account', style: white.copyWith(color: Colors.white70)),
+            Text(acc.isMerchant ? tr('Current (Merchant) account') : tr('Savings account'),
+                style: white.copyWith(color: Colors.white70)),
             const Spacer(),
             StatusBadge(acc.status),
           ]),
           const SizedBox(height: 4),
-          Text('A/c ${acc.accountNo}  •  ${acc.branch.ifsc}', style: white.copyWith(color: Colors.white70)),
+          Text('${tr('A/c {account}', {'account': acc.accountNo})}  •  ${acc.branch.ifsc}',
+              style: white.copyWith(color: Colors.white70)),
           if (acc.isMerchant) Text(acc.businessName, style: white.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          const Text('Available balance', style: TextStyle(color: Colors.white70)),
+          Text(tr('Available balance'), style: const TextStyle(color: Colors.white70)),
           Text(rupees(acc.availableBalance),
               style: white.copyWith(fontSize: 32, fontWeight: FontWeight.bold,
                   color: acc.availableBalance < 0 ? Colors.red.shade100 : Colors.white)),
           if (acc.lienAmount > 0) ...[
             const SizedBox(height: 8),
-            Text('Ledger balance ${rupees(acc.balance)}  •  On hold ${rupees(acc.lienAmount)}',
+            Text(tr('Ledger balance {balance}  •  On hold {hold}',
+                    {'balance': rupees(acc.balance), 'hold': rupees(acc.lienAmount)}),
                 style: white.copyWith(color: Colors.orange.shade100)),
           ],
         ],
@@ -227,12 +230,12 @@ class _RestrictionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.red.shade50,
-      child: const ListTile(
-        leading: Icon(Icons.gpp_bad, color: Colors.red),
-        title: Text('Debit services restricted'),
-        subtitle: Text('Your account is linked to a cyber fraud complaint. '
-            'Visit your home branch with original KYC documents for verification.'),
+      color: softBg(context, Colors.red),
+      child: ListTile(
+        leading: const Icon(Icons.gpp_bad, color: Colors.red),
+        title: Text(tr('Debit services restricted')),
+        subtitle: Text(tr('Your account is linked to a cyber fraud complaint. '
+            'Visit your home branch with original KYC documents for verification.')),
       ),
     );
   }
@@ -253,7 +256,7 @@ class _Action extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: brand.color, size: 30),
+          Icon(icon, color: isDark(context) ? Color.lerp(brand.color, Colors.white, 0.4) : brand.color, size: 30),
           const SizedBox(height: 6),
           Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
         ]),
@@ -270,7 +273,7 @@ class EntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = e.isCredit ? Colors.green.shade700 : Colors.red.shade700;
+    final color = strong(context, e.isCredit ? Colors.green : Colors.red);
     return ListTile(
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
@@ -287,7 +290,7 @@ class EntryTile extends StatelessWidget {
         children: [
           Text('${e.isCredit ? '+' : '−'} ${rupees(e.amount)}',
               style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          Text('Bal ${rupees(e.balanceAfter)}', style: const TextStyle(fontSize: 11)),
+          Text(tr('Bal {amount}', {'amount': rupees(e.balanceAfter)}), style: const TextStyle(fontSize: 11)),
         ],
       ),
     );

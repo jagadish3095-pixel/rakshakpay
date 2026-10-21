@@ -49,13 +49,13 @@ class _AtmListScreenState extends State<AtmListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Withdraw cash at ATM')),
+      appBar: AppBar(title: Text(tr('Withdraw cash at ATM'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(children: [
               ListTile(
                 leading: const Icon(Icons.my_location),
-                title: const Text('Your location'),
+                title: Text(tr('Your location')),
                 subtitle: Text(_where),
               ),
               const Divider(),
@@ -93,7 +93,7 @@ class _AtmMachineScreenState extends State<AtmMachineScreen> {
   Future<void> _withdraw() async {
     final amount = parsePaise(_amount.text);
     if (amount == null || _pin.text.length != 4) {
-      setState(() => _result = 'Enter amount and 4-digit PIN');
+      setState(() => _result = tr('Enter amount and 4-digit PIN'));
       return;
     }
     setState(() => _busy = true);
@@ -106,12 +106,13 @@ class _AtmMachineScreenState extends State<AtmMachineScreen> {
       });
       setState(() {
         _ok = true;
-        _result = '${res['message']}\n\nRef ${res['utr']}\nAvailable balance ${rupees(res['available_balance'])}';
+        _result = '${res['message']}\n\n${tr('Ref {utr}', {'utr': res['utr']})}\n'
+            '${tr('Available balance {amount}', {'amount': rupees(res['available_balance'])})}';
       });
     } catch (e) {
       setState(() {
         _ok = false;
-        _result = 'TRANSACTION DECLINED\n\n$e';
+        _result = '${tr('TRANSACTION DECLINED')}\n\n$e';
       });
     } finally {
       setState(() => _busy = false);
@@ -136,14 +137,14 @@ class _AtmMachineScreenState extends State<AtmMachineScreen> {
               border: Border.all(color: Colors.grey.shade700, width: 6),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('WELCOME\n${widget.atm.address.toUpperCase()}', style: screenText),
+              Text('${tr('WELCOME')}\n${widget.atm.address.toUpperCase()}', style: screenText),
               const SizedBox(height: 12),
-              Text('CARD INSERTED: XXXX XXXX XXXX ${card.substring(12)}', style: screenText),
+              Text(tr('CARD INSERTED: {card}', {'card': 'XXXX XXXX XXXX ${card.substring(12)}'}), style: screenText),
               const SizedBox(height: 12),
               if (_result != null)
                 Text(_result!, style: screenText.copyWith(color: _ok ? const Color(0xFF7CFFB2) : Colors.redAccent))
               else
-                const Text('SELECT OR ENTER AMOUNT', style: screenText),
+                Text(tr('SELECT OR ENTER AMOUNT'), style: screenText),
             ]),
           ),
           const SizedBox(height: 16),
@@ -158,9 +159,9 @@ class _AtmMachineScreenState extends State<AtmMachineScreen> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(color: Colors.white, fontSize: 20),
-              decoration: const InputDecoration(
-                  labelText: 'Amount (multiples of ₹100, max ₹20,000)', prefixText: '₹ ',
-                  labelStyle: TextStyle(color: Colors.white70), prefixStyle: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                  labelText: tr('Amount (multiples of ₹100, max ₹20,000)'), prefixText: '₹ ',
+                  labelStyle: const TextStyle(color: Colors.white70), prefixStyle: const TextStyle(color: Colors.white),
                   filled: true, fillColor: Colors.black26),
             ),
             const SizedBox(height: 12),
@@ -171,18 +172,18 @@ class _AtmMachineScreenState extends State<AtmMachineScreen> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 12),
-              decoration: const InputDecoration(
-                  labelText: 'ATM PIN', labelStyle: TextStyle(color: Colors.white70),
-                  counterStyle: TextStyle(color: Colors.white54), filled: true, fillColor: Colors.black26),
+              decoration: InputDecoration(
+                  labelText: tr('ATM PIN'), labelStyle: const TextStyle(color: Colors.white70),
+                  counterStyle: const TextStyle(color: Colors.white54), filled: true, fillColor: Colors.black26),
             ),
             FilledButton.icon(
               style: FilledButton.styleFrom(padding: const EdgeInsets.all(16), backgroundColor: Colors.green.shade700),
               onPressed: _busy ? null : _withdraw,
               icon: const Icon(Icons.payments),
-              label: Text(_busy ? 'Processing…' : 'Withdraw cash'),
+              label: Text(_busy ? tr('Processing…') : tr('Withdraw cash')),
             ),
           ] else
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Take card & exit')),
+            FilledButton(onPressed: () => Navigator.pop(context), child: Text(tr('Take card & exit'))),
         ],
       ),
     );

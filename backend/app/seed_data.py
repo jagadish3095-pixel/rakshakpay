@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .models import Atm, Bank, Branch
 
-# City -> (state, lat, lng). Also used by the apps for "demo location".
+# City -> (state, lat, lng). Also used by the apps to label GPS positions ("Near Bengaluru").
 CITIES: dict[str, tuple[str, float, float]] = {
     "Bengaluru": ("Karnataka", 12.9716, 77.5946),
     "Mysuru": ("Karnataka", 12.2958, 76.6394),

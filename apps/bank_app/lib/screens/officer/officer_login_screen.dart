@@ -44,12 +44,13 @@ class _OfficerLoginScreenState extends State<OfficerLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${brand.name} staff login')),
+      appBar: AppBar(title: Text(tr('{bank} staff login', {'bank': brand.name}))),
       body: ListView(padding: const EdgeInsets.all(24), children: [
-        Icon(Icons.badge, size: 72, color: brand.color),
+        Icon(Icons.badge, size: 72, color: isDark(context) ? Color.lerp(brand.color, Colors.white, 0.4) : brand.color),
         const SizedBox(height: 8),
-        const Text('Branch desk', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const Text('For bank staff only: customer verification and mule-list delisting.',
+        Text(tr('Branch desk'), textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(tr('For bank staff only: customer verification and mule-list delisting.'),
             textAlign: TextAlign.center),
         const SizedBox(height: 16),
         for (final s in _saved)
@@ -61,23 +62,23 @@ class _OfficerLoginScreenState extends State<OfficerLoginScreen> {
               onTap: _busy ? null : () => _login(s.loginId, s.password),
             ),
           ),
-        TextField(controller: _staffId, decoration: const InputDecoration(labelText: 'Staff ID')),
+        TextField(controller: _staffId, decoration: InputDecoration(labelText: tr('Staff ID'))),
         const SizedBox(height: 12),
         TextField(
           controller: _password,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: InputDecoration(labelText: tr('Password')),
           onSubmitted: (_) => _login(_staffId.text.trim(), _password.text),
         ),
         const SizedBox(height: 16),
         FilledButton(
           style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
           onPressed: _busy ? null : () => _login(_staffId.text.trim(), _password.text),
-          child: Text(_busy ? 'Signing in…' : 'Sign in'),
+          child: Text(_busy ? tr('Signing in…') : tr('Sign in')),
         ),
         const SizedBox(height: 8),
-        Text('Demo staff ID ${brand.code}001, password officer123', textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black45, fontSize: 12)),
+        Text(tr('Demo staff ID {id}, password {password}', {'id': '${brand.code}001', 'password': 'officer123'}),
+            textAlign: TextAlign.center, style: TextStyle(color: muted(context), fontSize: 12)),
       ]),
     );
   }

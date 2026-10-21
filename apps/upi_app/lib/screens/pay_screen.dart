@@ -44,16 +44,22 @@ class _PayScreenState extends State<PayScreen> {
 
   Future<void> _pay() async {
     final amount = parsePaise(_amount.text);
-    if (amount == null) return showError(context, 'Enter a valid amount');
+    if (amount == null) return showError(context, tr('Enter a valid amount'));
     final warning = _payee!['warning'] as String?;
     if (warning != null && !await confirmPayMule(context, warning)) return;
     if (!mounted) return;
+    // Location is mandatory: no GPS position, no payment.
+    setState(() => _busy = true);
+    final loc = await location.requireForPayment(context);
+    if (mounted) setState(() => _busy = false);
+    if (loc == null || !mounted) return;
     final pin = await askPin(context,
-        title: 'Enter UPI PIN', subtitle: 'Pay ${rupees(amount)} to ${_payee!['name']}\nfrom ${_from.address}');
+        title: tr('Enter UPI PIN'),
+        subtitle: tr('Pay {amount} to {name}\nfrom {vpa}',
+            {'amount': rupees(amount), 'name': _payee!['name'], 'vpa': _from.address}));
     if (pin == null) return;
     setState(() => _busy = true);
     try {
-      final loc = await location.current();
       final res = await api.post('/api/upi/pay', {
         'from_vpa': _from.address,
         'to': _payee!['vpa'],
@@ -77,7 +83,7 @@ class _PayScreenState extends State<PayScreen> {
   Widget build(BuildContext context) {
     final payee = _payee;
     return Scaffold(
-      appBar: AppBar(title: const Text('Pay')),
+      appBar: AppBar(title: Text(tr('Pay'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -85,15 +91,15 @@ class _PayScreenState extends State<PayScreen> {
             TextField(
               controller: _to,
               autofocus: widget.to == null,
-              decoration: const InputDecoration(
-                labelText: 'UPI ID or mobile number',
-                hintText: 'e.g. ravi6780@ganga or 9123456780',
-                prefixIcon: Icon(Icons.alternate_email),
+              decoration: InputDecoration(
+                labelText: tr('UPI ID or mobile number'),
+                hintText: tr('e.g. ravi6780@ganga or 9123456780'),
+                prefixIcon: const Icon(Icons.alternate_email),
               ),
               onSubmitted: (_) => _verify(),
             ),
             const SizedBox(height: 12),
-            FilledButton(onPressed: _busy ? null : _verify, child: Text(_busy ? 'Checking…' : 'Verify')),
+            FilledButton(onPressed: _busy ? null : _verify, child: Text(_busy ? tr('Checking…') : tr('Verify'))),
           ] else ...[
             Card(
               child: ListTile(
@@ -107,10 +113,10 @@ class _PayScreenState extends State<PayScreen> {
                   const Icon(Icons.verified, size: 18, color: Colors.green),
                 ]),
                 subtitle: Text('${payee['vpa']}\n${payee['bank']}'
-                    '${payee['is_merchant'] == true ? ' • Verified merchant' : ''}'),
+                    '${payee['is_merchant'] == true ? ' • ${tr('Verified merchant')}' : ''}'),
                 isThreeLine: true,
                 trailing: widget.to == null
-                    ? TextButton(onPressed: () => setState(() => _payee = null), child: const Text('Change'))
+                    ? TextButton(onPressed: () => setState(() => _payee = null), child: Text(tr('Change')))
                     : null,
               ),
             ),
@@ -128,14 +134,14 @@ class _PayScreenState extends State<PayScreen> {
             TextField(
               controller: _note,
               maxLength: 60,
-              decoration: const InputDecoration(labelText: 'Add a note (optional)'),
+              decoration: InputDecoration(labelText: tr('Add a note (optional)')),
             ),
             const SizedBox(height: 8),
             if (widget.profile.vpas.length > 1)
               DropdownButtonFormField<UpiVpa>(
                 initialValue: _from,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Pay from'),
+                decoration: InputDecoration(labelText: tr('Pay from')),
                 items: [
                   for (final v in widget.profile.vpas)
                     DropdownMenuItem(
@@ -149,15 +155,15 @@ class _PayScreenState extends State<PayScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: BankLogo(BankBrand.byCode(_from.bankCode), size: 36),
-                title: Text('Pay from ${BankBrand.byCode(_from.bankCode).name}'),
-                subtitle: Text('A/c ${_from.accountNoMasked} • ${_from.address}'),
+                title: Text(tr('Pay from {bank}', {'bank': BankBrand.byCode(_from.bankCode).name})),
+                subtitle: Text('${tr('A/c {account}', {'account': _from.accountNoMasked})} • ${_from.address}'),
               ),
             const SizedBox(height: 16),
             FilledButton.icon(
               style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
               onPressed: _busy ? null : _pay,
               icon: const Icon(Icons.lock),
-              label: Text(_busy ? 'Paying…' : 'Pay securely'),
+              label: Text(_busy ? tr('Paying…') : tr('Pay securely')),
             ),
           ],
         ],
@@ -185,7 +191,7 @@ class PaySuccessScreen extends StatelessWidget {
             const Icon(Icons.check_circle, color: Colors.white, size: 96),
             const SizedBox(height: 12),
             Text(rupees(amount), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-            Text('paid to ${res['payee_name']}', style: const TextStyle(color: Colors.white, fontSize: 18)),
+            Text(tr('paid to {name}', {'name': res['payee_name']}), style: const TextStyle(color: Colors.white, fontSize: 18)),
             Text(res['payee_vpa'], style: const TextStyle(color: Colors.white70)),
             // e.g. CoinVault: "added to your wallet" or "refunded: third-party deposit"
             if ((res['note'] as String? ?? '').isNotEmpty)
@@ -200,17 +206,17 @@ class PaySuccessScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Card(
               child: Column(children: [
-                row('UPI Ref (UTR)', res['utr']),
-                row('From', fromVpa),
-                row('Date', formatDateTime(res['date'])),
-                row('Location', place),
+                row(tr('UPI Ref (UTR)'), res['utr']),
+                row(tr('From'), fromVpa),
+                row(tr('Date'), formatDateTime(res['date'])),
+                row(tr('Location'), place),
               ]),
             ),
             const Spacer(),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.green.shade800),
               onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
+              child: Text(tr('Done')),
             ),
           ]),
         ),

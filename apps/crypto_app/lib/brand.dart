@@ -6,15 +6,24 @@ const kGold = Color(0xFFF5B301);
 const kBg = Color(0xFF0B1418);
 const kCard = Color(0xFF14232A);
 
-ThemeData coinVaultTheme() => ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: kBg,
-      colorScheme: ColorScheme.fromSeed(
-          seedColor: kTeal, brightness: Brightness.dark, primary: kTeal, secondary: kGold, surface: kCard),
-      appBarTheme: const AppBarTheme(backgroundColor: kBg, foregroundColor: Colors.white, elevation: 0),
-      cardTheme: const CardThemeData(color: kCard),
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-    );
+/// Night (the default) or day theme. The app bar stays dark in both.
+ThemeData coinVaultTheme([Brightness brightness = Brightness.dark]) {
+  final dark = brightness == Brightness.dark;
+  return ThemeData(
+    brightness: brightness,
+    scaffoldBackgroundColor: dark ? kBg : const Color(0xFFF2F7F7),
+    colorScheme: ColorScheme.fromSeed(
+        seedColor: kTeal, brightness: brightness, primary: dark ? kTeal : const Color(0xFF0F766E),
+        secondary: kGold, surface: dark ? kCard : Colors.white),
+    appBarTheme: const AppBarTheme(backgroundColor: kBg, foregroundColor: Colors.white, elevation: 0),
+    cardTheme: CardThemeData(color: dark ? kCard : Colors.white),
+    inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
+  );
+}
+
+/// Gold text/icons on the page: brand gold at night, a darker amber by day so it reads on white.
+Color goldText(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? kGold : const Color(0xFFB45309);
 
 class CoinVaultLogo extends StatelessWidget {
   const CoinVaultLogo({super.key, this.size = 64});

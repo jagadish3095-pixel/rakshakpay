@@ -96,12 +96,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: const Row(children: [CoinVaultLogo(size: 30), SizedBox(width: 8), Text('CoinVault')]),
         actions: [
-          IconButton(tooltip: 'History', icon: const Icon(Icons.receipt_long), onPressed: () => _open(const HistoryScreen())),
+          IconButton(tooltip: tr('History'), icon: const Icon(Icons.receipt_long), onPressed: () => _open(const HistoryScreen())),
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
-              'settings' => _open(SettingsScreen(api: api, location: location)),
+              'settings' => _open(SettingsScreen(api: api, location: location, makesPayments: false)),
               'pin' => _open(ChangeSecretScreen(
-                  title: 'Change CoinVault PIN',
+                  title: tr('Change CoinVault PIN'),
                   what: 'PIN',
                   submit: (current, next) async {
                     await api.post('/api/crypto/pin', {'current': current, 'new': next});
@@ -110,10 +110,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 )),
               _ => _logout(),
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'pin', child: Text('Change PIN')),
-              PopupMenuItem(value: 'settings', child: Text('Settings')),
-              PopupMenuItem(value: 'logout', child: Text('Log out')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'pin', child: Text(tr('Change PIN'))),
+              PopupMenuItem(value: 'settings', child: Text(tr('Settings'))),
+              PopupMenuItem(value: 'logout', child: Text(tr('Log out'))),
             ],
           ),
         ],
@@ -123,25 +123,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           : RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(padding: const EdgeInsets.all(16), children: [
-                Text('Hi, ${p.name.split(' ').first}', style: const TextStyle(color: Colors.white70)),
-                const Text('Portfolio value', style: TextStyle(color: Colors.white54)),
+                Text(tr('Hi, {name}', {'name': p.name.split(' ').first}), style: TextStyle(color: muted(context))),
+                Text(tr('Portfolio value'), style: TextStyle(color: muted(context))),
                 Text(rupees(total), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('INR wallet', style: TextStyle(color: Colors.white70)),
-                      Text(rupees(p.inr), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kGold)),
-                      Text('Linked bank: ${p.bankName} ${p.bankAccountMasked}',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(tr('INR wallet'), style: TextStyle(color: muted(context))),
+                      Text(rupees(p.inr),
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: goldText(context))),
+                      Text(tr('Linked bank: {bank} {account}', {'bank': p.bankName, 'account': p.bankAccountMasked}),
+                          style: TextStyle(color: muted(context), fontSize: 12)),
                       const SizedBox(height: 12),
                       Row(children: [
                         Expanded(
                           child: FilledButton.icon(
                             onPressed: () => _open(DepositScreen(profile: p)),
                             icon: const Icon(Icons.add),
-                            label: const Text('Deposit'),
+                            label: Text(tr('Deposit')),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -149,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           child: OutlinedButton.icon(
                             onPressed: () => _open(WithdrawScreen(profile: p)),
                             icon: const Icon(Icons.account_balance),
-                            label: const Text('Withdraw'),
+                            label: Text(tr('Withdraw')),
                           ),
                         ),
                       ]),
@@ -157,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Markets', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(tr('Markets'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 for (final h in p.holdings) _coinTile(h),
               ]),
             ),
@@ -176,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text(rupees(tick?.price ?? h.price), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text('${up ? '▲' : '▼'} ${tick?.changePct.abs().toStringAsFixed(2) ?? '0.00'}%',
-              style: TextStyle(color: up ? Colors.greenAccent : Colors.redAccent, fontSize: 12)),
+              style: TextStyle(color: strong(context, up ? Colors.green : Colors.red), fontSize: 12)),
         ]),
         onTap: () => _open(CoinScreen(asset: h.asset)),
       ),

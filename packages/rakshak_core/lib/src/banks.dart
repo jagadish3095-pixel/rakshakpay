@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'app_settings.dart';
+
 /// The look of one of the 5 banks, shared by the bank apps and the UPI app.
 class BankBrand {
-  const BankBrand(this.flavor, this.code, this.name, this.color, this.tagline, this.icon);
+  const BankBrand(this.flavor, this.code, this.name, this.color, this._tagline, this.icon);
 
-  final String flavor, code, name, tagline;
+  final String flavor, code, name, _tagline;
+
+  /// The bank's slogan in the chosen language (the bank name itself is never translated).
+  String get tagline => tr(_tagline);
   final Color color;
   final IconData icon;
 

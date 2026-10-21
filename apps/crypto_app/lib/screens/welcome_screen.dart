@@ -60,10 +60,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return Scaffold(
       appBar: AppBar(actions: [
         IconButton(
-          tooltip: 'Settings',
+          tooltip: tr('Settings'),
           icon: const Icon(Icons.settings),
           onPressed: () async {
-            await Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location)));
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location, makesPayments: false)));
             _check();
           },
         ),
@@ -71,20 +71,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       body: ListView(padding: const EdgeInsets.all(24), children: [
         const Center(child: CoinVaultLogo(size: 96)),
         const SizedBox(height: 12),
-        const Text('CoinVault', textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: kGold)),
-        const Text('Buy, sell and store crypto in India', textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70)),
-        const Text('Demo exchange • Fake coins and fake money', textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 12)),
+        Text('CoinVault', textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: goldText(context))),
+        Text(tr('Buy, sell and store crypto in India'), textAlign: TextAlign.center,
+            style: TextStyle(color: muted(context))),
+        Text(tr('Demo exchange • Fake coins and fake money'), textAlign: TextAlign.center,
+            style: TextStyle(color: muted(context).withValues(alpha: 0.7), fontSize: 12)),
         if (_connected == false)
           Card(
-            color: Colors.orange.shade900,
+            color: isDark(context) ? Colors.orange.shade900 : Colors.orange.shade100,
             margin: const EdgeInsets.only(top: 16),
-            child: const ListTile(
-              leading: Icon(Icons.wifi_off),
-              title: Text('Not connected to the server'),
-              subtitle: Text('Check internet, or the address in Settings (top right).'),
+            child: ListTile(
+              leading: const Icon(Icons.wifi_off),
+              title: Text(tr('Not connected to the server')),
+              subtitle: Text(tr('Check internet, or the address in Settings (top right).')),
             ),
           ),
         const SizedBox(height: 24),
@@ -110,7 +110,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           keyboardType: TextInputType.phone,
           maxLength: 10,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(labelText: 'Mobile number', prefixText: '+91 '),
+          decoration: InputDecoration(labelText: tr('Mobile number'), prefixText: '+91 '),
         ),
         TextField(
           controller: _pin,
@@ -118,19 +118,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           maxLength: 4,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(labelText: '4-digit PIN'),
+          decoration: InputDecoration(labelText: tr('4-digit PIN')),
           onSubmitted: (_) => _login(_mobile.text, _pin.text),
         ),
         FilledButton(
           style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
           onPressed: _busy ? null : () => _login(_mobile.text, _pin.text),
-          child: Text(_busy ? 'Logging in…' : 'Log in'),
+          child: Text(_busy ? tr('Logging in…') : tr('Log in')),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
-          style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16), foregroundColor: kGold),
+          style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16), foregroundColor: goldText(context)),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-          child: const Text('Create account (KYC)'),
+          child: Text(tr('Create account (KYC)')),
         ),
       ]),
     );

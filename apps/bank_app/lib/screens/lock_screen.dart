@@ -19,7 +19,7 @@ class LockScreen extends StatelessWidget {
       color: Color.lerp(brand.color, Colors.black, 0.2)!,
       accent: Colors.white,
       logo: BankLogo(brand, size: 80),
-      prompt: 'Enter your 4-digit MPIN',
+      prompt: 'Enter your 4-digit MPIN', // PinLockScreen translates it with tr()
       loadName: () async => (await api.get('/api/me'))['full_name'] as String,
       verify: (pin) => api.post('/api/unlock', {'mpin': pin}),
       onUnlocked: () => onLaunch

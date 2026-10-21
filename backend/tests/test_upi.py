@@ -1,5 +1,5 @@
 """End-to-end checks for the UPI switch (Phase 2)."""
-from helpers import login, open_account
+from helpers import HERE, login, open_account
 
 
 def upi_register(client, mobile, name):
@@ -68,8 +68,11 @@ def test_full_upi_flow(client):
     assert client.get("/api/upi/resolve", params={"to": "nobody@kaveri"}, headers=s).status_code == 404
 
     pay = {"from_vpa": "sunil6655@kaveri", "to": "9123456780", "amount": 500_00, "upi_pin": "2580",
-           "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "DEMO"}}
+           "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "GPS"}}
     assert client.post("/api/upi/pay", headers=s, json={**pay, "upi_pin": "9999"}).status_code == 401
+    # No GPS position: the payment is refused
+    no_gps = client.post("/api/upi/pay", headers=s, json={**pay, "location": {"lat": None, "lng": None}})
+    assert no_gps.status_code == 428 and "Location is mandatory" in no_gps.json()["detail"]
     assert client.post("/api/upi/pay", headers=s, json={**pay, "to": "sunil6655@kaveri"}).status_code == 400
     assert client.post("/api/upi/pay", headers=s, json={**pay, "amount": 60_000_00}).status_code == 400
     r = client.post("/api/upi/pay", headers=s, json=pay)
@@ -98,5 +101,5 @@ def test_upi_app_gets_live_updates(client):
 
     with client.websocket_connect(f"/ws?token={rv['Authorization'].split()[1]}") as ws:
         client.post("/api/upi/pay", headers=s, json={"from_vpa": "sunil6655@kaveri", "to": "ravi6780@ganga",
-                                                     "amount": 100_00, "upi_pin": "2580"})
+                                                     "amount": 100_00, "upi_pin": "2580", "location": HERE})
         assert ws.receive_json() == {"type": "account_changed", "account_no": b["account_no"]}

@@ -1,5 +1,7 @@
 // Plain data classes for the JSON the server sends. Money is always in paise.
 
+import 'app_settings.dart';
+
 class Branch {
   Branch.fromJson(Map<String, dynamic> j)
       : id = j['id'],
@@ -66,7 +68,7 @@ class Account {
 
   bool get isActive => status == 'ACTIVE';
   bool get isMerchant => accountType == 'CURRENT';
-  String get typeLabel => isMerchant ? 'Current (Merchant)' : 'Savings';
+  String get typeLabel => isMerchant ? tr('Current (Merchant)') : tr('Savings');
 }
 
 class Customer {

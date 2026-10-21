@@ -80,8 +80,14 @@ installed on the same phone.
 ⚙ **Settings** → enter `http://<laptop IP>:8000` → **Save & test**. The Android emulator uses
 `http://10.0.2.2:8000` (the default).
 
-**Demo location:** in Settings you can pretend the phone is in another city, so the police map shows
-transactions spread across India even though all phones are in one room.
+**Location is mandatory for payments:** every bank transfer and UPI payment records the phone's GPS
+position. If location is off or permission is refused, the app shows a popup and the payment is not made
+(the server also refuses payments without a location). The police map places each account where its
+phone was when it paid; a shop is placed where the buyer paid it.
+
+**Night mode and languages:** ⚙ **Settings** in every app → Night mode (Auto / Day / Night) and
+Language (English / हिन्दी / ಕನ್ನಡ). `python tools/check_translations.py` checks that every text has a
+Hindi and Kannada translation.
 
 Build release APKs of all 9 apps to share by WhatsApp or Drive: double-click `tools\build_all_apks.cmd` → `dist\`.
 

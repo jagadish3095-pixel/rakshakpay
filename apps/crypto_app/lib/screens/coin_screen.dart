@@ -65,24 +65,24 @@ class _CoinScreenState extends State<CoinScreen> {
     switch (_mode) {
       case 'BUY':
         final inr = parsePaise(_inr.text);
-        if (inr == null) return showError(context, 'Enter an amount');
+        if (inr == null) return showError(context, tr('Enter an amount'));
         path = '/api/crypto/buy';
         body = {'asset': widget.asset, 'inr': inr};
-        summary = 'Buy ${widget.asset} for ${rupees(inr)}';
+        summary = tr('Buy {asset} for {amount}', {'asset': widget.asset, 'amount': rupees(inr)});
       case 'SELL':
         final q = parseQty(_qty.text);
-        if (q == null) return showError(context, 'Enter a quantity');
+        if (q == null) return showError(context, tr('Enter a quantity'));
         path = '/api/crypto/sell';
         body = {'asset': widget.asset, 'quantity': q};
-        summary = 'Sell ${formatQty(q)} ${widget.asset}';
+        summary = tr('Sell {qty} {asset}', {'qty': formatQty(q), 'asset': widget.asset});
       default:
         final q = parseQty(_qty.text);
-        if (q == null) return showError(context, 'Enter a quantity');
+        if (q == null) return showError(context, tr('Enter a quantity'));
         path = '/api/crypto/withdraw-crypto';
         body = {'asset': widget.asset, 'quantity': q, 'address': _address.text.trim()};
-        summary = 'Send ${formatQty(q)} ${widget.asset} to an outside wallet';
+        summary = tr('Send {qty} {asset} to an outside wallet', {'qty': formatQty(q), 'asset': widget.asset});
     }
-    final pin = await askPin(context, title: 'Enter CoinVault PIN', subtitle: summary);
+    final pin = await askPin(context, title: tr('Enter CoinVault PIN'), subtitle: summary);
     if (pin == null) return;
     setState(() => _busy = true);
     try {
@@ -116,30 +116,34 @@ class _CoinScreenState extends State<CoinScreen> {
                 const SizedBox(width: 16),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(rupees(_price), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  Text('${up ? '▲' : '▼'} ${_tick?.changePct.abs().toStringAsFixed(2) ?? '0.00'}% (1 hour)',
-                      style: TextStyle(color: up ? Colors.greenAccent : Colors.redAccent)),
+                  Text(
+                      tr('{arrow} {pct}% (1 hour)', {
+                        'arrow': up ? '▲' : '▼',
+                        'pct': _tick?.changePct.abs().toStringAsFixed(2) ?? '0.00',
+                      }),
+                      style: TextStyle(color: strong(context, up ? Colors.green : Colors.red))),
                 ]),
               ]),
               const SizedBox(height: 16),
               Card(
                 child: ListTile(
-                  title: const Text('You hold'),
+                  title: Text(tr('You hold')),
                   subtitle: Text('${formatQty(_held)} ${widget.asset}'),
                   trailing: Text(rupees(_held * _price ~/ kUnits), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               Card(
                 child: ListTile(
-                  title: const Text('INR wallet'),
-                  trailing: Text(rupees(p.inr), style: const TextStyle(color: kGold, fontWeight: FontWeight.bold)),
+                  title: Text(tr('INR wallet')),
+                  trailing: Text(rupees(p.inr), style: TextStyle(color: goldText(context), fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 12),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'BUY', label: Text('Buy')),
-                  ButtonSegment(value: 'SELL', label: Text('Sell')),
-                  ButtonSegment(value: 'SEND', label: Text('Send')),
+                segments: [
+                  ButtonSegment(value: 'BUY', label: Text(tr('Buy'))),
+                  ButtonSegment(value: 'SELL', label: Text(tr('Sell'))),
+                  ButtonSegment(value: 'SEND', label: Text(tr('Send'))),
                 ],
                 selected: {_mode},
                 onSelectionChanged: (s) => setState(() => _mode = s.first),
@@ -153,14 +157,14 @@ class _CoinScreenState extends State<CoinScreen> {
                   backgroundColor: _mode == 'SEND' ? Colors.deepOrange : null,
                 ),
                 onPressed: _busy ? null : _submit,
-                child: Text(_busy ? 'Please wait…' : {'BUY': 'Buy', 'SELL': 'Sell', 'SEND': 'Send'}[_mode]!),
+                child: Text(_busy ? tr('Please wait…') : {'BUY': tr('Buy'), 'SELL': tr('Sell'), 'SEND': tr('Send')}[_mode]!),
               ),
             ]),
     );
   }
 
   List<Widget> _form() {
-    final maxQty = TextButton(onPressed: () => setState(() => _qty.text = formatQty(_held)), child: const Text('MAX'));
+    final maxQty = TextButton(onPressed: () => setState(() => _qty.text = formatQty(_held)), child: Text(tr('MAX')));
     switch (_mode) {
       case 'BUY':
         final inr = parsePaise(_inr.text) ?? 0;
@@ -168,12 +172,15 @@ class _CoinScreenState extends State<CoinScreen> {
           TextField(
             controller: _inr,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Spend (min ₹100)', prefixText: '₹ '),
+            decoration: InputDecoration(labelText: tr('Spend (min ₹100)'), prefixText: '₹ '),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
-          Text('You get ≈ ${_price == 0 ? 0 : formatQty(inr * kUnits ~/ _price)} ${widget.asset}',
-              style: const TextStyle(color: Colors.white70)),
+          Text(
+              tr('You get ≈ {amount}', {
+                'amount': '${_price == 0 ? 0 : formatQty(inr * kUnits ~/ _price)} ${widget.asset}',
+              }),
+              style: TextStyle(color: muted(context))),
         ];
       case 'SELL':
         final q = parseQty(_qty.text) ?? 0;
@@ -181,34 +188,35 @@ class _CoinScreenState extends State<CoinScreen> {
           TextField(
             controller: _qty,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: 'Quantity (${widget.asset})', suffixIcon: maxQty),
+            decoration: InputDecoration(labelText: tr('Quantity ({asset})', {'asset': widget.asset}), suffixIcon: maxQty),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
-          Text('You get ≈ ${rupees(q * _price ~/ kUnits)}', style: const TextStyle(color: Colors.white70)),
+          Text(tr('You get ≈ {amount}', {'amount': rupees(q * _price ~/ kUnits)}),
+              style: TextStyle(color: muted(context))),
         ];
       default:
         return [
           Card(
-            color: Colors.deepOrange.shade900.withValues(alpha: 0.5),
-            child: const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('Coins sent to an outside wallet leave CoinVault. They cannot be frozen, '
-                  'reversed or recovered by CoinVault, your bank or the police.'),
+            color: softBg(context, Colors.deepOrange),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(tr('Coins sent to an outside wallet leave CoinVault. They cannot be frozen, '
+                  'reversed or recovered by CoinVault, your bank or the police.')),
             ),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _qty,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: 'Quantity (${widget.asset})', suffixIcon: maxQty),
+            decoration: InputDecoration(labelText: tr('Quantity ({asset})', {'asset': widget.asset}), suffixIcon: maxQty),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _address,
-            decoration: const InputDecoration(
-              labelText: 'Outside wallet address',
-              hintText: 'e.g. bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+            decoration: InputDecoration(
+              labelText: tr('Outside wallet address'),
+              hintText: tr('e.g. {example}', {'example': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'}),
             ),
           ),
         ];

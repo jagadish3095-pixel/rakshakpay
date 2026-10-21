@@ -43,30 +43,32 @@ class _MulesScreenState extends State<MulesScreen> with LiveRefresh {
       Padding(
         padding: const EdgeInsets.all(12),
         child: TextField(
-          decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search name, PAN, account, mobile'),
+          decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('Search name, PAN, account, mobile')),
           onChanged: (v) => setState(() => _search = v),
         ),
       ),
       Expanded(
         child: ListView(padding: const EdgeInsets.symmetric(horizontal: 12), children: [
-          if (shown.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No mule accounts')),
+          if (shown.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(tr('No mule accounts'))),
           for (final m in shown)
             Card(
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.red.shade100,
-                  child: Icon(m['linked_by_pan_only'] == true ? Icons.link : Icons.gpp_bad, color: Colors.red),
+                  backgroundColor: chipBg(context, Colors.red),
+                  child: Icon(m['linked_by_pan_only'] == true ? Icons.link : Icons.gpp_bad, color: strong(context, Colors.red)),
                 ),
                 title: Text('${m['holder']} • PAN ${m['pan']}'),
-                subtitle: Text('${m['bank']} A/c ${m['account_no']} • ${m['mobile']}\n'
-                    '${m['linked_by_pan_only'] == true ? 'Linked by PAN (not in a trail)' : 'In ${m['complaints']} complaint(s)'}'
-                    ' • lien ${rupees(m['lien_amount'], decimals: false)}'),
+                subtitle: Text('${m['bank']} ${tr('A/c')} ${m['account_no']} • ${m['mobile']}\n'
+                    '${m['linked_by_pan_only'] == true ? tr('Linked by PAN (not in a trail)') : tr('In {count} complaint(s)', {'count': m['complaints']})}'
+                    ' • ${tr('lien {amount}', {'amount': rupees(m['lien_amount'], decimals: false)})}'),
                 isThreeLine: true,
                 trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  const Text('Available', style: TextStyle(fontSize: 11)),
+                  Text(tr('Available'), style: const TextStyle(fontSize: 11)),
                   Text(rupees(m['available_balance'], decimals: false),
                       style: TextStyle(fontWeight: FontWeight.bold,
-                          color: (m['available_balance'] as int) < 0 ? Colors.red : Colors.black87)),
+                          color: (m['available_balance'] as int) < 0
+                              ? strong(context, Colors.red)
+                              : Theme.of(context).colorScheme.onSurface)),
                 ]),
               ),
             ),

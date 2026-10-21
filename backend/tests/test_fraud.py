@@ -7,7 +7,7 @@ P1 --25,000--> P4 (keeps 10,000) --15,000--> P6 (keeps 5,000) --10,000--> P8 (+5
 from app.db import SessionLocal
 from app.models import Account
 from app.routers.police import DEMO_OFFICER
-from helpers import login, open_account
+from helpers import HERE, login, open_account
 from test_crypto import crypto_register
 from test_upi import bank_account, link, upi_register
 
@@ -25,7 +25,7 @@ class Person:
     def pay(self, other, rupees, ok=True, **extra):
         r = self.client.post("/api/transfers", headers=self.headers, json={
             "from_account": self.no, "to_account": other.no, "to_ifsc": other.ifsc,
-            "amount": rupees * 100, "mpin": "1234", **extra})
+            "amount": rupees * 100, "mpin": "1234", "location": HERE, **extra})
         if ok:
             assert r.status_code == 200, r.text
         return r
@@ -57,7 +57,7 @@ def test_eight_person_story(client):
     link(client, s1, p1.acc)
     scam = client.post("/api/upi/pay", headers=v, json={
         "from_vpa": "priya0002@kaveri", "to": "pankaj0001@ganga", "amount": 50_000_00, "upi_pin": "2580",
-        "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "DEMO"}}).json()
+        "location": {"lat": 12.97, "lng": 77.59, "label": "Bengaluru", "source": "GPS"}}).json()
 
     # --- the money is spread out
     p1.pay(p3, 25_000)
@@ -70,7 +70,7 @@ def test_eight_person_story(client):
     s7 = upi_register(client, "9000000007", "Pradeep Seven")
     link(client, s7, p7.acc)
     client.post("/api/upi/pay", headers=s7, json={"from_vpa": "pradeep0007@kaveri", "to": "coinvault@godavari",
-                                                  "amount": 10_000_00, "upi_pin": "2580"})
+                                                  "amount": 10_000_00, "upi_pin": "2580", "location": HERE})
     btc = client.post("/api/crypto/buy", headers=cv, json={"asset": "BTC", "inr": 10_000_00, "pin": "4444"}).json()
     qty = next(h for h in btc["user"]["holdings"] if h["asset"] == "BTC")["quantity"]
     client.post("/api/crypto/withdraw-crypto", headers=cv, json={

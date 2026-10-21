@@ -32,13 +32,13 @@ class _ShellState extends State<Shell> {
     });
   }
 
-  static const _destinations = [
-    (Icons.dashboard, 'Dashboard'),
-    (Icons.assignment, 'Complaints'),
-    (Icons.gavel, 'Court orders'),
-    (Icons.fact_check, 'Verify'),
-    (Icons.gpp_bad, 'Mule list'),
-  ];
+  static List<(IconData, String)> get _destinations => [
+        (Icons.dashboard, tr('Dashboard')),
+        (Icons.assignment, tr('Complaints')),
+        (Icons.gavel, tr('Court orders')),
+        (Icons.fact_check, tr('Verify')),
+        (Icons.gpp_bad, tr('Mule list')),
+      ];
 
   Future<void> _logout() async {
     live.stop();
@@ -62,10 +62,10 @@ class _ShellState extends State<Shell> {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(
-        title: const Row(children: [Icon(Icons.local_police), SizedBox(width: 8), Text('Cyber Police')]),
+        title: Row(children: [const Icon(Icons.local_police), const SizedBox(width: 8), Text(tr('Cyber Police'))]),
         actions: [
           PopupMenuButton<String>(
-            tooltip: 'Demo reset',
+            tooltip: tr('Demo reset'),
             icon: const Icon(Icons.restart_alt, color: kAmber),
             onSelected: (v) async {
               final done = v == 'story' ? await resetAndLoadDemo(context) : await resetEmpty(context);
@@ -76,24 +76,25 @@ class _ShellState extends State<Shell> {
                 });
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'story',
-                child: ListTile(leading: Icon(Icons.movie), title: Text('Reset & load demo story')),
+                child: ListTile(leading: const Icon(Icons.movie), title: Text(tr('Reset & load demo story'))),
               ),
               PopupMenuItem(
                 value: 'empty',
-                child: ListTile(leading: Icon(Icons.delete_forever, color: Colors.red), title: Text('Reset everything (empty)')),
+                child: ListTile(
+                    leading: const Icon(Icons.delete_forever, color: Colors.red), title: Text(tr('Reset everything (empty)'))),
               ),
             ],
           ),
           IconButton(
-            tooltip: 'Settings',
+            tooltip: tr('Settings'),
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location))),
+                context, MaterialPageRoute(builder: (_) => SettingsScreen(api: api, location: location, makesPayments: false))),
           ),
-          IconButton(tooltip: 'Log out', icon: const Icon(Icons.logout), onPressed: _logout),
+          IconButton(tooltip: tr('Log out'), icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
       body: wide

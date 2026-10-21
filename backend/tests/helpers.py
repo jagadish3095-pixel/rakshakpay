@@ -1,5 +1,8 @@
 """Small helpers used by several test files."""
 
+# Phone GPS position sent with every payment (location is mandatory).
+HERE = {"lat": 12.97, "lng": 77.59, "label": "Near Bengaluru, Karnataka", "source": "GPS"}
+
 
 def first_branch(client, bank):
     return client.get(f"/api/banks/{bank}").json()["branches"][0]

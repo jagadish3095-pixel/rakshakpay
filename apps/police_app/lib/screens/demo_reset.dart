@@ -13,33 +13,33 @@ Future<bool> resetAndLoadDemo(BuildContext context) async {
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
         icon: const Icon(Icons.restart_alt, size: 40, color: Colors.red),
-        title: const Text('Reset & load demo story'),
+        title: Text(tr('Reset & load demo story')),
         content: SizedBox(
           width: 480,
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('This deletes EVERY account, payment and complaint on the server, then creates the '
+            Text(tr('This deletes EVERY account, payment and complaint on the server, then creates the '
                 '8-person story: Priya is scammed of ₹50,000 and the money moves through 7 mules, a phone shop '
-                'and a crypto exchange.\n\nEveryone on every phone will have to log in again.'),
+                'and a crypto exchange.\n\nEveryone on every phone will have to log in again.')),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: withComplaint,
               onChanged: (v) => setState(() => withComplaint = v!),
-              title: const Text("Also file Priya's complaint now"),
-              subtitle: const Text('Leave off to file it live from her phone during the demo'),
+              title: Text(tr("Also file Priya's complaint now")),
+              subtitle: Text(tr('Leave off to file it live from her phone during the demo')),
             ),
             TextField(
               controller: confirm,
-              decoration: const InputDecoration(labelText: 'Type RESET to confirm'),
+              decoration: InputDecoration(labelText: tr('Type RESET to confirm')),
               onChanged: (_) => setState(() {}),
             ),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: confirm.text.trim().toUpperCase() == 'RESET' ? () => Navigator.pop(ctx, true) : null,
-            child: const Text('Reset & load'),
+            child: Text(tr('Reset & load')),
           ),
         ],
       ),
@@ -50,11 +50,11 @@ Future<bool> resetAndLoadDemo(BuildContext context) async {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const AlertDialog(
+    builder: (_) => AlertDialog(
       content: Row(children: [
-        CircularProgressIndicator(),
-        SizedBox(width: 16),
-        Expanded(child: Text('Resetting and playing the story…\nThis can take up to a minute.')),
+        const CircularProgressIndicator(),
+        const SizedBox(width: 16),
+        Expanded(child: Text(tr('Resetting and playing the story…\nThis can take up to a minute.'))),
       ]),
     ),
   );
@@ -85,28 +85,28 @@ Future<bool> resetEmpty(BuildContext context) async {
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
         icon: const Icon(Icons.delete_forever, size: 40, color: Colors.red),
-        title: const Text('Reset everything (empty)'),
+        title: Text(tr('Reset everything (empty)')),
         content: SizedBox(
           width: 480,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('This deletes EVERY customer, account, payment, UPI user, CoinVault user, complaint and '
+            Text(tr('This deletes EVERY customer, account, payment, UPI user, CoinVault user, complaint and '
                 'court order on the server. Only the 5 banks, their branches and ATMs, the CoinVault exchange '
                 'account, the police officer and the bank staff logins remain.\n\n'
-                'Everyone on every phone will have to log in again.'),
+                'Everyone on every phone will have to log in again.')),
             const SizedBox(height: 8),
             TextField(
               controller: confirm,
-              decoration: const InputDecoration(labelText: 'Type RESET to confirm'),
+              decoration: InputDecoration(labelText: tr('Type RESET to confirm')),
               onChanged: (_) => setState(() {}),
             ),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: confirm.text.trim().toUpperCase() == 'RESET' ? () => Navigator.pop(ctx, true) : null,
-            child: const Text('Delete everything'),
+            child: Text(tr('Delete everything')),
           ),
         ],
       ),
@@ -118,7 +118,7 @@ Future<bool> resetEmpty(BuildContext context) async {
     await api.setToken(res['police_token']);
     live.stop();
     live.start();
-    if (context.mounted) showInfo(context, 'Everything deleted. The server is empty.');
+    if (context.mounted) showInfo(context, tr('Everything deleted. The server is empty.'));
     return true;
   } catch (e) {
     if (context.mounted) showError(context, e);
@@ -128,33 +128,33 @@ Future<bool> resetEmpty(BuildContext context) async {
 
 Future<void> _showLogins(BuildContext context, Map<String, dynamic> story) {
   final logins = story['logins'] as Map<String, dynamic>;
-  const roles = {
-    'victim': 'Victim', 'p1': 'Scammer (P1)', 'p3': 'Mule P3', 'p4': 'Mule P4', 'p5': 'Mule P5',
-    'p6': 'Mule P6', 'p7': 'Mule P7 (crypto)', 'p8': 'Mule P8 (bought phone)', 'shop': 'Phone shop',
+  final roles = {
+    'victim': tr('Victim'), 'p1': tr('Scammer (P1)'), 'p3': tr('Mule {n}', {'n': 'P3'}),
+    'p4': tr('Mule {n}', {'n': 'P4'}), 'p5': tr('Mule {n}', {'n': 'P5'}), 'p6': tr('Mule {n}', {'n': 'P6'}),
+    'p7': tr('Mule P7 (crypto)'), 'p8': tr('Mule P8 (bought phone)'), 'shop': tr('Phone shop'),
   };
   return showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Demo story loaded'),
+      title: Text(tr('Demo story loaded')),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (story['complaint'] != null)
-              Text('Complaint ${story['complaint']['ack_no']} filed and traced. Open it in Complaints.\n')
+              Text('${tr('Complaint {ack} filed and traced. Open it in Complaints.', {'ack': story['complaint']['ack_no']})}\n')
             else
-              const Text('Next: on a phone, log in to RakshakPay as Priya (9000000002) and report the ₹50,000 '
-                  'payment to Pankaj.\n'),
-            Text('Bank password ${logins['bank_password']} • MPIN ${logins['mpin']} • ATM PIN ${logins['atm_pin']}\n'
-                'RakshakPay passcode ${logins['rakshakpay_passcode']} • UPI PIN ${logins['upi_pin']} • '
-                'CoinVault PIN ${logins['coinvault_pin']}\n'),
+              Text('${tr('Next: on a phone, log in to RakshakPay as Priya (9000000002) and report the ₹50,000 '
+                  'payment to Pankaj.')}\n'),
+            Text('${tr('Bank password {password} • MPIN {mpin} • ATM PIN {atm}', {'password': logins['bank_password'], 'mpin': logins['mpin'], 'atm': logins['atm_pin']})}\n'
+                '${tr('RakshakPay passcode {passcode} • UPI PIN {upi} • CoinVault PIN {coinvault}', {'passcode': logins['rakshakpay_passcode'], 'upi': logins['upi_pin'], 'coinvault': logins['coinvault_pin']})}\n'),
             for (final p in story['people'])
-              Text('${roles[p['role']] ?? p['role']}: ${p['name']} • ${p['bank']} • mobile ${p['mobile']} • ${p['city']}',
+              Text('${roles[p['role']] ?? p['role']}: ${p['name']} • ${p['bank']} • ${tr('mobile')} ${p['mobile']} • ${p['city']}',
                   style: const TextStyle(fontSize: 13)),
           ]),
         ),
       ),
-      actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('OK')))],
     ),
   );
 }

@@ -22,7 +22,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
     final paise = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Request a fixed amount'),
+        title: Text(tr('Request a fixed amount')),
         content: TextField(
           controller: c,
           autofocus: true,
@@ -30,8 +30,8 @@ class _MyQrScreenState extends State<MyQrScreen> {
           decoration: const InputDecoration(prefixText: '₹ '),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, parsePaise(c.text)), child: const Text('Set')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, parsePaise(c.text)), child: Text(tr('Set'))),
         ],
       ),
     );
@@ -43,7 +43,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
     final bank = BankBrand.byCode(_vpa.bankCode);
     final data = buildUpiUri(vpa: _vpa.address, name: _vpa.displayName, amountPaise: _amount);
     return Scaffold(
-      appBar: AppBar(title: const Text('My QR code')),
+      appBar: AppBar(title: Text(tr('My QR code'))),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -51,7 +51,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
             DropdownButtonFormField<UpiVpa>(
               initialValue: _vpa,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Receive money in'),
+              decoration: InputDecoration(labelText: tr('Receive money in')),
               items: [
                 for (final v in widget.profile.vpas)
                   DropdownMenuItem(value: v, child: Text('${BankBrand.byCode(v.bankCode).name} • ${v.address}')),
@@ -67,7 +67,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const RakshakLogo(size: 28),
                   const SizedBox(width: 8),
-                  Text(_vpa.isMerchant ? 'Pay this shop' : 'Scan to pay',
+                  Text(_vpa.isMerchant ? tr('Pay this shop') : tr('Scan to pay'),
                       style: Theme.of(context).textTheme.titleMedium),
                 ]),
                 const SizedBox(height: 12),
@@ -78,7 +78,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
                 Text(bank.name, style: TextStyle(color: bank.color)),
                 if (_amount != null) ...[
                   const SizedBox(height: 8),
-                  Text('Amount: ${rupees(_amount!)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(tr('Amount: {amount}', {'amount': rupees(_amount!)}), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ]),
             ),
@@ -89,20 +89,21 @@ class _MyQrScreenState extends State<MyQrScreen> {
               child: OutlinedButton.icon(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: _vpa.address));
-                  showInfo(context, 'UPI ID copied');
+                  showInfo(context, tr('UPI ID copied'));
                 },
                 icon: const Icon(Icons.copy),
-                label: const Text('Copy UPI ID'),
+                label: Text(tr('Copy UPI ID')),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _amount == null
-                  ? OutlinedButton.icon(onPressed: _askAmount, icon: const Icon(Icons.currency_rupee), label: const Text('Set amount'))
+                  ? OutlinedButton.icon(
+                      onPressed: _askAmount, icon: const Icon(Icons.currency_rupee), label: Text(tr('Set amount')))
                   : OutlinedButton.icon(
                       onPressed: () => setState(() => _amount = null),
                       icon: const Icon(Icons.clear),
-                      label: const Text('Clear amount')),
+                      label: Text(tr('Clear amount'))),
             ),
           ]),
         ],

@@ -12,11 +12,8 @@ final savedLogins = SavedLogins(api);
 const kNavy = Color(0xFF0D2B5E);
 const kAmber = Color(0xFFFFB300);
 
-ThemeData policeTheme() => ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: kNavy, primary: kNavy, secondary: kAmber),
-      appBarTheme: const AppBarTheme(backgroundColor: kNavy, foregroundColor: Colors.white),
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-    );
+ThemeData policeTheme([Brightness brightness = Brightness.light]) =>
+    brandTheme(kNavy, brightness, secondary: kAmber);
 
 /// Colour for each account role in a money trail.
 Color roleColor(String role) => switch (role) {
@@ -28,10 +25,10 @@ Color roleColor(String role) => switch (role) {
     };
 
 String roleLabel(String role) => switch (role) {
-      'VICTIM' => 'Victim',
-      'MULE' => 'Suspected mule',
-      'MERCHANT' => 'Merchant (protected)',
-      'EXCHANGE' => 'Crypto exchange',
+      'VICTIM' => tr('Victim'),
+      'MULE' => tr('Suspected mule'),
+      'MERCHANT' => tr('Merchant (protected)'),
+      'EXCHANGE' => tr('Crypto exchange'),
       _ => role,
     };
 
@@ -60,13 +57,14 @@ mixin LiveRefresh<T extends StatefulWidget> on State<T> {
 
 /// A small coloured statistic box for dashboards.
 class StatTile extends StatelessWidget {
-  const StatTile(this.label, this.value, {super.key, this.color = kNavy, this.icon});
+  const StatTile(this.label, this.value, {super.key, this.color, this.icon});
   final String label, value;
-  final Color color;
+  final Color? color; // default: the theme's primary colour (navy by day, light blue at night)
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Theme.of(context).colorScheme.primary;
     return SizedBox(
       width: 170,
       child: Card(
@@ -76,7 +74,7 @@ class StatTile extends StatelessWidget {
             Row(children: [
               if (icon != null) Icon(icon, size: 18, color: color),
               if (icon != null) const SizedBox(width: 6),
-              Expanded(child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54))),
+              Expanded(child: Text(label, style: TextStyle(fontSize: 12, color: muted(context)))),
             ]),
             const SizedBox(height: 4),
             Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),

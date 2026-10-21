@@ -1,5 +1,7 @@
 // CoinVault data from the server. Rupees are in paise; coins in 1/100,000,000 units.
 
+import 'package:rakshak_core/rakshak_core.dart';
+
 const kUnits = 100000000;
 
 /// 12345678 units -> "0.12345678" (trailing zeros removed).
@@ -70,11 +72,11 @@ class ExchangeEntry {
   final int? price;
 
   String get title => switch (kind) {
-        'DEPOSIT' => 'Deposited rupees',
-        'BUY' => 'Bought $asset',
-        'SELL' => 'Sold $asset',
-        'WITHDRAW_INR' => 'Withdrew to bank',
-        'WITHDRAW_CRYPTO' => 'Sent $asset to outside wallet',
+        'DEPOSIT' => tr('Deposited rupees'),
+        'BUY' => tr('Bought {asset}', {'asset': asset}),
+        'SELL' => tr('Sold {asset}', {'asset': asset}),
+        'WITHDRAW_INR' => tr('Withdrew to bank'),
+        'WITHDRAW_CRYPTO' => tr('Sent {asset} to outside wallet', {'asset': asset}),
         _ => kind,
       };
 }

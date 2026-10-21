@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final newest = history.firstOrNull;
       // Pop-up when money arrives while the app is open.
       if (!firstLoad && newest != null && newest.utr != _recent.firstOrNull?.utr && !newest.sent) {
-        showInfo(context, '${rupees(newest.amount)} received from ${newest.otherName}');
+        showInfo(context, tr('{amount} received from {name}', {'amount': rupees(newest.amount), 'name': newest.otherName}));
       }
       setState(() {
         _profile = profile;
@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Row(children: [RakshakLogo(size: 30, onDark: true), SizedBox(width: 8), Text('RakshakPay')]),
         actions: [
           IconButton(
-            tooltip: 'Notices',
+            tooltip: tr('Notices'),
             icon: const Icon(Icons.notifications),
             onPressed: () => _open(NoticesScreen(api: api, path: '/api/upi/notices')),
           ),
@@ -105,10 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
               'security' => _profile == null ? null : _open(SecurityScreen(profile: _profile!)),
               _ => _logout(),
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'security', child: Text('Security (passcode, UPI PIN)')),
-              PopupMenuItem(value: 'settings', child: Text('Settings')),
-              PopupMenuItem(value: 'logout', child: Text('Log out')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'security', child: Text(tr('Security (passcode, UPI PIN)'))),
+              PopupMenuItem(value: 'settings', child: Text(tr('Settings'))),
+              PopupMenuItem(value: 'logout', child: Text(tr('Log out'))),
             ],
           ),
         ],
@@ -123,13 +123,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   _ProfileCard(p, onLink: () => _open(const LinkBankScreen())),
                   if (p.vpas.any((v) => v.status != 'ACTIVE'))
                     Card(
-                      color: Colors.red.shade50,
+                      color: softBg(context, Colors.red),
                       margin: const EdgeInsets.only(top: 12),
                       child: ListTile(
                         leading: const Icon(Icons.gpp_bad, color: Colors.red),
-                        title: const Text('Your account is on the mule list'),
-                        subtitle: const Text('Payments are blocked. Tap to read the notice; '
-                            'visit your home branch for verification.'),
+                        title: Text(tr('Your account is on the mule list')),
+                        subtitle: Text(tr('Payments are blocked. Tap to read the notice; '
+                            'visit your home branch for verification.')),
                         onTap: () => _open(NoticesScreen(api: api, path: '/api/upi/notices')),
                       ),
                     ),
@@ -140,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundColor: kSaffron, padding: const EdgeInsets.symmetric(vertical: 18)),
                       onPressed: () => _open(ScanScreen(profile: p)),
                       icon: const Icon(Icons.qr_code_scanner, size: 28),
-                      label: const Text('Scan & Pay', style: TextStyle(fontSize: 18)),
+                      label: Text(tr('Scan & Pay'), style: const TextStyle(fontSize: 18)),
                     ),
                     const SizedBox(height: 12),
                     GridView.count(
@@ -150,28 +150,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSpacing: 8,
                       crossAxisSpacing: 8,
                       children: [
-                        _Action(Icons.alternate_email, 'Pay UPI ID\nor mobile', () => _open(PayScreen(profile: p))),
-                        _Action(Icons.qr_code_2, 'My QR', () => _open(MyQrScreen(profile: p))),
-                        _Action(Icons.account_balance_wallet, 'Check\nbalance',
+                        _Action(Icons.alternate_email, tr('Pay UPI ID\nor mobile'), () => _open(PayScreen(profile: p))),
+                        _Action(Icons.qr_code_2, tr('My QR'), () => _open(MyQrScreen(profile: p))),
+                        _Action(Icons.account_balance_wallet, tr('Check\nbalance'),
                             () => _open(AccountsScreen(profile: p, askBalance: true))),
-                        _Action(Icons.account_balance, 'Bank\naccounts', () => _open(AccountsScreen(profile: p))),
-                        _Action(Icons.history, 'History', () => _open(const HistoryScreen())),
-                        _Action(Icons.add_link, 'Link bank', () => _open(const LinkBankScreen())),
-                        _Action(Icons.report, 'Report\nfraud (1930)', () => _open(const HistoryScreen(reportMode: true)),
+                        _Action(Icons.account_balance, tr('Bank\naccounts'), () => _open(AccountsScreen(profile: p))),
+                        _Action(Icons.history, tr('History'), () => _open(const HistoryScreen())),
+                        _Action(Icons.add_link, tr('Link bank'), () => _open(const LinkBankScreen())),
+                        _Action(Icons.report, tr('Report\nfraud (1930)'),
+                            () => _open(const HistoryScreen(reportMode: true)),
                             color: Colors.red),
-                        _Action(Icons.assignment, 'My\ncomplaints',
+                        _Action(Icons.assignment, tr('My\ncomplaints'),
                             () => _open(ComplaintsScreen(api: api, path: '/api/upi/complaints'))),
-                        _Action(Icons.notifications, 'Notices',
+                        _Action(Icons.notifications, tr('Notices'),
                             () => _open(NoticesScreen(api: api, path: '/api/upi/notices'))),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Row(children: [
-                      Text('Recent payments', style: Theme.of(context).textTheme.titleMedium),
+                      Text(tr('Recent payments'), style: Theme.of(context).textTheme.titleMedium),
                       const Spacer(),
-                      TextButton(onPressed: () => _open(const HistoryScreen()), child: const Text('See all')),
+                      TextButton(onPressed: () => _open(const HistoryScreen()), child: Text(tr('See all'))),
                     ]),
-                    if (_recent.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('No payments yet')),
+                    if (_recent.isEmpty)
+                      Padding(padding: const EdgeInsets.all(16), child: Text(tr('No payments yet'))),
                     for (final pay in _recent) PaymentTile(pay),
                   ],
                 ],
@@ -196,27 +198,27 @@ class _ProfileCard extends StatelessWidget {
         gradient: const LinearGradient(colors: [kIndigo, Color(0xFF1E1550)]),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Namaste, ${p.name.split(' ').first}',
+        Text(tr('Namaste, {name}', {'name': p.name.split(' ').first}),
             style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
         Text('+91 ${p.mobile}', style: const TextStyle(color: Colors.white70)),
         const SizedBox(height: 12),
         if (vpa == null) ...[
-          const Text('Link a bank account to start paying with UPI.', style: TextStyle(color: Colors.white)),
+          Text(tr('Link a bank account to start paying with UPI.'), style: const TextStyle(color: Colors.white)),
           const SizedBox(height: 8),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: kSaffron),
             onPressed: onLink,
             icon: const Icon(Icons.add_link),
-            label: const Text('Link bank account'),
+            label: Text(tr('Link bank account')),
           ),
         ] else
           InkWell(
             onTap: () {
               Clipboard.setData(ClipboardData(text: vpa.address));
-              showInfo(context, 'UPI ID copied');
+              showInfo(context, tr('UPI ID copied'));
             },
             child: Row(children: [
-              const Text('UPI ID  ', style: TextStyle(color: Colors.white70)),
+              Text('${tr('UPI ID')}  ', style: const TextStyle(color: Colors.white70)),
               Flexible(
                 child: Text(vpa.address,
                     style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
@@ -231,14 +233,15 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _Action extends StatelessWidget {
-  const _Action(this.icon, this.label, this.onTap, {this.color = kIndigo});
+  const _Action(this.icon, this.label, this.onTap, {this.color});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color; // default: the brand indigo (a lighter indigo at night)
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Theme.of(context).colorScheme.primary;
     return Material(
       color: color.withValues(alpha: 0.07),
       borderRadius: BorderRadius.circular(12),
@@ -262,14 +265,17 @@ class PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = p.sent ? Colors.red.shade700 : Colors.green.shade700;
+    final color = strong(context, p.sent ? Colors.red : Colors.green);
+    final brand = Theme.of(context).colorScheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: kIndigo.withValues(alpha: 0.1),
-        child: Text(p.otherName.isEmpty ? '?' : p.otherName[0], style: const TextStyle(color: kIndigo)),
+        backgroundColor: brand.withValues(alpha: 0.1),
+        child: Text(p.otherName.isEmpty ? '?' : p.otherName[0], style: TextStyle(color: brand)),
       ),
-      title: Text(p.sent ? 'Paid to ${p.otherName}' : 'Received from ${p.otherName}'),
+      title: Text(p.sent
+          ? tr('Paid to {name}', {'name': p.otherName})
+          : tr('Received from {name}', {'name': p.otherName})),
       subtitle: Text('${p.otherVpa}\n${formatDateTime(p.date)}', style: const TextStyle(fontSize: 12)),
       isThreeLine: true,
       trailing: Text('${p.sent ? '−' : '+'} ${rupees(p.amount)}',

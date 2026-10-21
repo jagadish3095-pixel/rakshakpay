@@ -54,14 +54,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${brand.name} Login')),
+      appBar: AppBar(title: Text(tr('{bank} Login', {'bank': brand.name}))),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           Center(child: BankLogo(brand, size: 80)),
           if (_saved.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text('Saved logins on this phone', style: Theme.of(context).textTheme.titleSmall),
+            Text(tr('Saved logins on this phone'), style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 4),
             for (final s in _saved)
               Card(
@@ -71,26 +71,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   subtitle: Text(s.loginId),
                   onTap: _busy ? null : () => _login(s.loginId, s.password),
                   trailing: IconButton(
-                    tooltip: 'Forget this login',
+                    tooltip: tr('Forget this login'),
                     icon: const Icon(Icons.close),
                     onPressed: () => _forget(s),
                   ),
                 ),
               ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(children: [
-                Expanded(child: Divider()),
-                Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('or log in as someone else')),
-                Expanded(child: Divider()),
+                const Expanded(child: Divider()),
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(tr('or log in as someone else'))),
+                const Expanded(child: Divider()),
               ]),
             ),
           ] else
             const SizedBox(height: 32),
           TextField(
             controller: _id,
-            decoration: const InputDecoration(
-                labelText: 'Customer ID or mobile number', prefixIcon: Icon(Icons.person)),
+            decoration: InputDecoration(
+                labelText: tr('Customer ID or mobile number'), prefixIcon: const Icon(Icons.person)),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -98,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: _hide,
             onSubmitted: (_) => _login(_id.text.trim(), _password.text, remember: _remember),
             decoration: InputDecoration(
-              labelText: 'Password',
+              labelText: tr('Password'),
               prefixIcon: const Icon(Icons.lock),
               suffixIcon: IconButton(
                   icon: Icon(_hide ? Icons.visibility : Icons.visibility_off),
@@ -110,8 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
             controlAffinity: ListTileControlAffinity.leading,
             value: _remember,
             onChanged: (v) => setState(() => _remember = v!),
-            title: const Text('Remember me on this phone'),
-            subtitle: const Text('Demo only – saves the password for one-tap login'),
+            title: Text(tr('Remember me on this phone')),
+            subtitle: Text(tr('Demo only – saves the password for one-tap login')),
           ),
           const SizedBox(height: 8),
           FilledButton(
@@ -119,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: _busy ? null : () => _login(_id.text.trim(), _password.text, remember: _remember),
             child: _busy
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Login', style: TextStyle(fontSize: 16)),
+                : Text(tr('Login'), style: const TextStyle(fontSize: 16)),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_settings.dart';
 import 'widgets.dart';
 
 /// Change a password or PIN: current value, new value, confirm.
@@ -34,13 +35,18 @@ class _ChangeSecretScreenState extends State<ChangeSecretScreen> {
 
   bool get _isPin => widget.pinDigits != null;
 
+  /// What is being changed ('password', 'MPIN'…), in the chosen language.
+  String get _what => tr(widget.what);
+
   String? _validNew(String? v) {
     v ??= '';
-    if (_isPin && !RegExp('^\\d{${widget.pinDigits}}\$').hasMatch(v)) return 'Enter ${widget.pinDigits} digits';
-    if (!_isPin && v.length < 6) return 'At least 6 characters';
-    if (v == _current.text) return 'Must be different from the current ${widget.what}';
-    if (_isPin && RegExp(r'^(\d)\1+$').hasMatch(v)) return 'Too easy to guess (all the same digit)';
-    if (_isPin && '0123456789'.contains(v)) return 'Too easy to guess (a sequence)';
+    if (_isPin && !RegExp('^\\d{${widget.pinDigits}}\$').hasMatch(v)) {
+      return tr('Enter {count} digits', {'count': widget.pinDigits});
+    }
+    if (!_isPin && v.length < 6) return tr('At least 6 characters');
+    if (v == _current.text) return tr('Must be different from the current {what}', {'what': _what});
+    if (_isPin && RegExp(r'^(\d)\1+$').hasMatch(v)) return tr('Too easy to guess (all the same digit)');
+    if (_isPin && '0123456789'.contains(v)) return tr('Too easy to guess (a sequence)');
     return null;
   }
 
@@ -50,7 +56,8 @@ class _ChangeSecretScreenState extends State<ChangeSecretScreen> {
     try {
       await widget.submit(_current.text, _new.text);
       if (!mounted) return;
-      showInfo(context, '${widget.what[0].toUpperCase()}${widget.what.substring(1)} changed');
+      final what = _what;
+      showInfo(context, tr('{what} changed', {'what': '${what[0].toUpperCase()}${what.substring(1)}'}));
       Navigator.pop(context, _new.text);
     } catch (e) {
       if (mounted) showError(context, e);
@@ -72,25 +79,28 @@ class _ChangeSecretScreenState extends State<ChangeSecretScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(title: Text(tr(widget.title))),
       body: Form(
         key: _form,
         child: ListView(padding: const EdgeInsets.all(20), children: [
-          if (widget.help != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(widget.help!)),
-          _field(_current, 'Current ${widget.what}', (v) => (v ?? '').isEmpty ? 'Required' : null),
+          if (widget.help != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(tr(widget.help!))),
+          _field(_current, tr('Current {what}', {'what': _what}), (v) => (v ?? '').isEmpty ? tr('Required') : null),
           const SizedBox(height: 12),
-          _field(_new, 'New ${widget.what}', _validNew),
+          _field(_new, tr('New {what}', {'what': _what}), _validNew),
           const SizedBox(height: 12),
-          _field(_confirm, 'Confirm new ${widget.what}', (v) => v != _new.text ? 'Does not match' : null),
+          _field(_confirm, tr('Confirm new {what}', {'what': _what}),
+              (v) => v != _new.text ? tr('Does not match') : null),
           const SizedBox(height: 16),
           FilledButton(
             style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
             onPressed: _busy ? null : _save,
-            child: Text(_busy ? 'Saving…' : 'Change ${widget.what}'),
+            child: Text(_busy ? tr('Saving…') : tr('Change {what}', {'what': _what})),
           ),
           const SizedBox(height: 12),
-          Text('Never share your ${widget.what} with anyone, including callers who say they are from the bank, '
-              'police or RBI.', style: const TextStyle(color: Colors.black54)),
+          Text(
+              tr('Never share your {what} with anyone, including callers who say they are from the bank, '
+                  'police or RBI.', {'what': _what}),
+              style: TextStyle(color: muted(context))),
         ]),
       ),
     );

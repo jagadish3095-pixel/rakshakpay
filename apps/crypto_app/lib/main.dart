@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakshak_core/rakshak_core.dart';
 
 import 'brand.dart';
+import 'l10n.dart';
 import 'screens/lock_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services.dart';
@@ -11,6 +12,8 @@ final navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await api.init();
+  await appSettings.init(defaultTheme: ThemeMode.dark);
+  addTranslations(appTranslations);
   runApp(const CryptoApp());
 }
 
@@ -44,12 +47,21 @@ class _CryptoAppState extends State<CryptoApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'CoinVault',
-      debugShowCheckedModeBanner: false,
-      theme: coinVaultTheme(),
-      home: api.token == null ? const WelcomeScreen() : const LockScreen(onLaunch: true),
+    // Rebuilds when night mode or the language is changed in Settings.
+    return ListenableBuilder(
+      listenable: appSettings,
+      builder: (context, _) => MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'CoinVault',
+        debugShowCheckedModeBanner: false,
+        theme: coinVaultTheme(Brightness.light),
+        darkTheme: coinVaultTheme(Brightness.dark),
+        themeMode: appSettings.themeMode,
+        locale: appSettings.locale,
+        supportedLocales: kSupportedLocales,
+        localizationsDelegates: kLocalizationsDelegates,
+        home: api.token == null ? const WelcomeScreen() : const LockScreen(onLaunch: true),
+      ),
     );
   }
 }

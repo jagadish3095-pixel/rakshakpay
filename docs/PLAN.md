@@ -11,7 +11,7 @@
 | Cyber Police app | Android phone/tablet + web (laptop) | Complaints, money-trail graph, GPS map with animated money flow, mule list, court applications, refund |
 | Backend | Laptop (FastAPI) | Bank core systems + NPCI switch + fraud engine + e-court simulator |
 
-Every transaction stores GPS (or the demo city). ATM withdrawals store the ATM's location.
+Every payment must carry the phone's GPS position (no location, no payment). ATM withdrawals store the ATM's location.
 
 ## System rules
 

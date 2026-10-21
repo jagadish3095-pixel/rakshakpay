@@ -29,22 +29,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _sendOtp() {
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(_mobile.text)) {
-      return showError(context, 'Enter a valid 10-digit mobile number');
+      return showError(context, tr('Enter a valid 10-digit mobile number'));
     }
     // Demo only: real UPI apps verify the SIM by sending an SMS from the phone.
     setState(() => _sentOtp = (100000 + Random().nextInt(900000)).toString());
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(children: [Icon(Icons.sms), SizedBox(width: 8), Text('SMS (demo)')]),
-        content: Text('Your RakshakPay verification code is $_sentOtp.'),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+        title: Row(children: [const Icon(Icons.sms), const SizedBox(width: 8), Text(tr('SMS (demo)'))]),
+        content: Text(tr('Your RakshakPay verification code is {otp}.', {'otp': _sentOtp})),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('OK')))],
       ),
     );
   }
 
   Future<void> _register() async {
-    if (!_verified) return showError(context, 'Verify your mobile number first');
+    if (!_verified) return showError(context, tr('Verify your mobile number first'));
     if (!_form.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
@@ -67,14 +67,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create your RakshakPay account')),
+      appBar: AppBar(title: Text(tr('Create your RakshakPay account'))),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text('Use the same mobile number that is registered with your bank. '
-                'That is how UPI finds your bank accounts.'),
+            Text(tr('Use the same mobile number that is registered with your bank. '
+                'That is how UPI finds your bank accounts.')),
             const SizedBox(height: 16),
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
@@ -85,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   maxLength: 10,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
-                    labelText: 'Mobile number',
+                    labelText: tr('Mobile number'),
                     prefixText: '+91 ',
                     suffixIcon: _verified ? const Icon(Icons.verified, color: Colors.green) : null,
                   ),
@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(width: 8),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: OutlinedButton(onPressed: _sendOtp, child: Text(_sentOtp == null ? 'Send OTP' : 'Resend')),
+                  child: OutlinedButton(onPressed: _sendOtp, child: Text(_sentOtp == null ? tr('Send OTP') : tr('Resend'))),
                 ),
               ],
             ]),
@@ -106,15 +106,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _otp,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
-                    decoration: const InputDecoration(labelText: 'Enter OTP'),
+                    decoration: InputDecoration(labelText: tr('Enter OTP')),
                   ),
                 ),
                 const SizedBox(width: 8),
                 FilledButton.tonal(
                   onPressed: () => _otp.text == _sentOtp
                       ? setState(() => _verified = true)
-                      : showError(context, 'Wrong OTP'),
-                  child: const Text('Verify'),
+                      : showError(context, tr('Wrong OTP')),
+                  child: Text(tr('Verify')),
                 ),
               ]),
             if (_verified) ...[
@@ -122,8 +122,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Your full name'),
-                validator: (v) => (v?.trim().length ?? 0) < 3 ? 'Enter your name' : null,
+                decoration: InputDecoration(labelText: tr('Your full name')),
+                validator: (v) => (v?.trim().length ?? 0) < 3 ? tr('Enter your name') : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -132,8 +132,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 maxLength: 4,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Set 4-digit app passcode (to open the app)'),
-                validator: (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : 'Enter 4 digits',
+                decoration: InputDecoration(labelText: tr('Set 4-digit app passcode (to open the app)')),
+                validator: (v) => RegExp(r'^\d{4}$').hasMatch(v ?? '') ? null : tr('Enter 4 digits'),
               ),
               TextFormField(
                 controller: _pass2,
@@ -141,14 +141,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 maxLength: 4,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Confirm passcode'),
-                validator: (v) => v != _pass.text ? 'Passcodes do not match' : null,
+                decoration: InputDecoration(labelText: tr('Confirm passcode')),
+                validator: (v) => v != _pass.text ? tr('Passcodes do not match') : null,
               ),
               const SizedBox(height: 8),
               FilledButton(
                 style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
                 onPressed: _busy ? null : _register,
-                child: Text(_busy ? 'Creating…' : 'Create account'),
+                child: Text(_busy ? tr('Creating…') : tr('Create account')),
               ),
             ],
           ],

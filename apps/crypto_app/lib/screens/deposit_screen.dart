@@ -24,31 +24,33 @@ class _DepositScreenState extends State<DepositScreen> {
       vpa: widget.profile.depositVpa, name: widget.profile.depositName, amountPaise: parsePaise(_amount.text));
 
   Future<void> _payWithUpiApp() async {
-    if (parsePaise(_amount.text) == null) return showError(context, 'Enter an amount');
+    if (parsePaise(_amount.text) == null) return showError(context, tr('Enter an amount'));
     final ok = await launchUrl(Uri.parse(_uri), mode: LaunchMode.externalApplication);
-    if (!ok && mounted) showError(context, 'No UPI app found. Install RakshakPay.');
+    if (!ok && mounted) showError(context, tr('No UPI app found. Install RakshakPay.'));
   }
 
   @override
   Widget build(BuildContext context) {
     final p = widget.profile;
     return Scaffold(
-      appBar: AppBar(title: const Text('Deposit rupees')),
+      appBar: AppBar(title: Text(tr('Deposit rupees'))),
       body: ListView(padding: const EdgeInsets.all(20), children: [
         TextField(
           controller: _amount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          decoration: const InputDecoration(labelText: 'Amount', prefixText: '₹ '),
+          decoration: InputDecoration(labelText: tr('Amount'), prefixText: '₹ '),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
         Card(
-          color: Colors.amber.shade900.withValues(alpha: 0.4),
+          color: softBg(context, Colors.amber),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('Pay only from your own bank account: ${p.bankName} ${p.bankAccountMasked}.\n'
-                'Payments from anyone else\'s account are refunded automatically.'),
+            child: Text(tr(
+                'Pay only from your own bank account: {bank} {account}.\n'
+                'Payments from anyone else\'s account are refunded automatically.',
+                {'bank': p.bankName, 'account': p.bankAccountMasked})),
           ),
         ),
         const SizedBox(height: 16),
@@ -56,10 +58,10 @@ class _DepositScreenState extends State<DepositScreen> {
           style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
           onPressed: _payWithUpiApp,
           icon: const Icon(Icons.open_in_new),
-          label: const Text('Pay with RakshakPay'),
+          label: Text(tr('Pay with RakshakPay')),
         ),
         const SizedBox(height: 24),
-        const Center(child: Text('or scan with any UPI app', style: TextStyle(color: Colors.white70))),
+        Center(child: Text(tr('or scan with any UPI app'), style: TextStyle(color: muted(context)))),
         const SizedBox(height: 12),
         Center(
           child: Container(
@@ -73,15 +75,15 @@ class _DepositScreenState extends State<DepositScreen> {
           child: TextButton.icon(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: p.depositVpa));
-              showInfo(context, 'UPI ID copied');
+              showInfo(context, tr('UPI ID copied'));
             },
-            icon: const Icon(Icons.copy, color: kGold),
-            label: Text(p.depositVpa, style: const TextStyle(color: kGold, fontSize: 16)),
+            icon: Icon(Icons.copy, color: goldText(context)),
+            label: Text(p.depositVpa, style: TextStyle(color: goldText(context), fontSize: 16)),
           ),
         ),
         const SizedBox(height: 8),
-        const Text('After paying, come back here. Your INR wallet updates automatically.',
-            textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
+        Text(tr('After paying, come back here. Your INR wallet updates automatically.'),
+            textAlign: TextAlign.center, style: TextStyle(color: muted(context))),
       ]),
     );
   }

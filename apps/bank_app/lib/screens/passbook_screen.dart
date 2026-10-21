@@ -41,17 +41,20 @@ class _PassbookScreenState extends State<PassbookScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${e.isCredit ? 'Credit' : 'Debit'} ${rupees(e.amount)}', style: Theme.of(ctx).textTheme.titleLarge),
+            Text(e.isCredit
+                    ? tr('Credit {amount}', {'amount': rupees(e.amount)})
+                    : tr('Debit {amount}', {'amount': rupees(e.amount)}),
+                style: Theme.of(ctx).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(e.narration),
             Text('UTR ${e.utr} • ${e.channel}'),
             Text(formatDateTime(e.date)),
-            if (e.locationLabel.isNotEmpty) Text('Location: ${e.locationLabel}'),
-            if (e.remark.isNotEmpty) Text('Remark: ${e.remark}'),
+            if (e.locationLabel.isNotEmpty) Text(tr('Location: {place}', {'place': e.locationLabel})),
+            if (e.remark.isNotEmpty) Text(tr('Remark: {remark}', {'remark': e.remark})),
             const SizedBox(height: 16),
             if (canReport)
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
                 onPressed: () {
                   Navigator.pop(ctx);
                   Navigator.push(context, MaterialPageRoute(
@@ -61,7 +64,7 @@ class _PassbookScreenState extends State<PassbookScreen> {
                   ));
                 },
                 icon: const Icon(Icons.report),
-                label: const Text('Report this payment as fraud (1930)'),
+                label: Text(tr('Report this payment as fraud (1930)')),
               ),
           ]),
         ),
@@ -114,10 +117,10 @@ class _PassbookScreenState extends State<PassbookScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Passbook'),
+        title: Text(tr('Passbook')),
         actions: [
           IconButton(
-            tooltip: 'Download PDF',
+            tooltip: tr('Download PDF'),
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _data == null
                 ? null
@@ -127,18 +130,18 @@ class _PassbookScreenState extends State<PassbookScreen> {
       ),
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        color: _flash ? Colors.yellow.shade100 : Colors.transparent,
+        color: _flash ? chipBg(context, Colors.yellow) : Colors.transparent,
         child: account == null
             ? const Center(child: CircularProgressIndicator())
             : Column(children: [
                 ListTile(
-                  title: Text('A/c ${account.accountNo}'),
+                  title: Text(tr('A/c {account}', {'account': account.accountNo})),
                   subtitle: Text('${account.holderName} • ${account.branch.ifsc}'),
                   trailing: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Balance', style: TextStyle(fontSize: 12)),
+                      Text(tr('Balance'), style: const TextStyle(fontSize: 12)),
                       Text(rupees(account.balance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ],
                   ),
@@ -146,7 +149,7 @@ class _PassbookScreenState extends State<PassbookScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(children: [
-                    for (final (key, label) in [('ALL', 'All'), ('CR', 'Credits'), ('DR', 'Debits')])
+                    for (final (key, label) in [('ALL', tr('All')), ('CR', tr('Credits')), ('DR', tr('Debits'))])
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
@@ -158,7 +161,7 @@ class _PassbookScreenState extends State<PassbookScreen> {
                     const Spacer(),
                     const Icon(Icons.circle, size: 10, color: Colors.green),
                     const SizedBox(width: 4),
-                    const Text('Live', style: TextStyle(fontSize: 12)),
+                    Text(tr('Live'), style: const TextStyle(fontSize: 12)),
                   ]),
                 ),
                 const Divider(),
@@ -168,14 +171,15 @@ class _PassbookScreenState extends State<PassbookScreen> {
                     child: ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
-                        if (shown.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No transactions')),
+                        if (shown.isEmpty)
+                          Padding(padding: const EdgeInsets.all(24), child: Text(tr('No transactions'))),
                         if (widget.reportMode)
                           Card(
-                            color: Colors.red.shade50,
-                            child: const ListTile(
-                              leading: Icon(Icons.report, color: Colors.red),
-                              title: Text('Which payment was fraud?'),
-                              subtitle: Text('Tap the payment to report it.'),
+                            color: softBg(context, Colors.red),
+                            child: ListTile(
+                              leading: const Icon(Icons.report, color: Colors.red),
+                              title: Text(tr('Which payment was fraud?')),
+                              subtitle: Text(tr('Tap the payment to report it.')),
                             ),
                           ),
                         for (final e in shown) EntryTile(e, onTap: () => _details(e)),
@@ -197,7 +201,7 @@ class _PdfScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final acc = data['account']['account_no'];
     return Scaffold(
-      appBar: AppBar(title: const Text('Passbook PDF')),
+      appBar: AppBar(title: Text(tr('Passbook PDF'))),
       body: PdfPreview(
         build: (_) => buildPassbookPdf(data, brand.name, brand.color),
         pdfFileName: '${brand.flavor}_passbook_$acc.pdf',
