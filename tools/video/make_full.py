@@ -26,6 +26,7 @@ from make_video import (AMBER, CARD, GREEN, NAVY, PURPLE, RED, SAFFRON, SOFT, WH
                         browser, font, gradient_bg, illus_pan, logo, phone, rounded, shadowed, text_img, wrap)
 
 W, H, FPS = 1920, 1080, 30
+LANG = "hi"  # "hi" = Hinglish, "en" = English (see story_en.py)
 GAP = 0.30  # pause when the speaker changes
 SHOT_PAD = 0.40
 
@@ -39,6 +40,14 @@ ms.VOICES.update({
 ms.NAMES.update({"pavan": "PAVAN", "pradeep": "PRADEEP", "ravi": "RAVI", "lakshmi": "LAKSHMI (BANK OFFICER)"})
 ms.PILL.update({"pavan": (90, 90, 200), "pradeep": (200, 70, 60), "ravi": (40, 120, 200),
                 "lakshmi": (120, 70, 170)})
+
+
+def L(text):
+    """On-screen text in the chosen language."""
+    if LANG == "en":
+        from story_en import EN
+        return EN.get(text, text)
+    return text
 
 
 # ---------------------------------------------------------------- speech, one call per run of the same speaker
@@ -114,16 +123,16 @@ def map_base(shots):
 
 
 def rule_card(n, title, body, ic, color, w=820):
-    im = rounded((w, 170), 26, CARD + (255,), outline=color + (255,), width=3)
-    im.alpha_composite(badge(ic, 90, color, NAVY), (24, 40))
+    im = rounded((w, 140), 24, CARD + (255,), outline=color + (255,), width=3)
+    im.alpha_composite(badge(ic, 80, color, NAVY), (22, 30))
     d = ImageDraw.Draw(im)
-    tf = font(31, "bold")
-    tl = wrap(f"{n}. {title}", tf, w - 170)
+    tf, bf = font(29, "bold"), font(23)
+    tl = wrap(f"{n}. {title}", tf, w - 150)[:2]
     for j, ln in enumerate(tl):
-        d.text((136, 16 + j * 38), ln, font=tf, fill=WHITE)
-    y = 22 + len(tl) * 38
-    for j, ln in enumerate(wrap(body, font(25), w - 170)):
-        d.text((138, y + j * 32), ln, font=font(25), fill=SOFT)
+        d.text((122, 14 + j * 35), ln, font=tf, fill=WHITE)
+    y = 20 + len(tl) * 35
+    for j, ln in enumerate(wrap(body, bf, w - 150)[:2]):
+        d.text((124, y + j * 29), ln, font=bf, fill=SOFT)
     return im
 
 
@@ -331,8 +340,8 @@ def build(shots: pathlib.Path):
         months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN"]
         m = months[min(5, int(c.t / max(c.dur / 6, 0.1)))]
         pop(f, calendar("?", m), 1350, 380, 1)
-        paste(f, label("Court order ka intezaar… mahinon tak"), 1110, 580)
-        pop(f, pill("Mule → naya account, doosra bank", RED, WHITE), 1380, 720, c.appear(0, 0.3))
+        paste(f, label(L("Court order ka intezaar… mahinon tak")), 1110, 580)
+        pop(f, pill(L("Mule → naya account, doosra bank"), RED, WHITE), 1380, 720, c.appear(0, 0.3))
     shot([N("Mule doosre bank mein naya account khol lete hain. Aur Priya? Court ke order ka mahinon intezaar.",
             "Mule दूसरे bank में नया account खोल लेते हैं। और प्रिया? Court के order का महीनों इंतज़ार।")],
          waiting, home_bg)
@@ -341,7 +350,7 @@ def build(shots: pathlib.Path):
     def intro(f, c):
         pop(f, logo(260), W / 2, 380, min(1, c.t / 0.6))
         pop(f, text_img("RakshakPay", 120, "black", align="center"), W / 2, 620, min(1, (c.t - 0.4) / 0.5))
-        pop(f, text_img("har rupaye ki raksha", 46, "light", SOFT, align="center"), W / 2, 740,
+        pop(f, text_img(L("har rupaye ki raksha"), 46, "light", SOFT, align="center"), W / 2, 740,
             min(1, (c.t - 0.9) / 0.5))
     shot([N("Isi samasya ka hal hai — RakshakPay.", "इसी समस्या का हल है — रक्षक पे।")], intro, nav)
 
@@ -534,6 +543,7 @@ def build(shots: pathlib.Path):
                 ("Jaan-boojhkar shaamil (Involved)", "Blocked in every bank, police case continues", RED)]
     oc = []
     for title, body, col in outcomes:
+        title, body = L(title), L(body)
         im = rounded((540, 260), 26, CARD + (255,), outline=col + (255,), width=4)
         d = ImageDraw.Draw(im)
         for j, ln in enumerate(wrap(title, font(36, "bold"), 490)):
@@ -544,7 +554,7 @@ def build(shots: pathlib.Path):
 
     def outcome_draw(f, c):
         if c.i == 0:
-            paste(f, text_img("Police ke teen faisle", 60, "bold"), 120, 90)
+            paste(f, text_img(L("Police ke teen faisle"), 60, "bold"), 120, 90)
             for k, im in enumerate(oc):
                 pop(f, im, 120 + k * 580 + 270, 460, c.appear(0, 0.8 + k * 1.6))
         else:
@@ -584,13 +594,17 @@ def build(shots: pathlib.Path):
               ("Account, card, SIM kiraye par nahi", "'Ghar baithe paisa ghumao' jobs make you a mule", "\U0001F6AB", RED),
               ("Payment se pehle warning padhiye", "Mule warning? Stop the payment", "⚠", AMBER),
               ("Fraud? Turant 1930", "or cybercrime.gov.in — the sooner, the more is saved", "⏱", GREEN),
-              ("Location aur SMS alert ON", "Every payment needs your phone's location", "\U0001F4CD", (90, 160, 255))]
-    cards = [rule_card(k + 1, t, b, ic, col) for k, (t, b, ic, col) in enumerate(safety)]
+              ("Location aur SMS alert ON", "Every payment needs your phone's location", "\U0001F4CD", (90, 160, 255)),
+              ("Anjaan logon ka paisa nahi", "'I'll send you money, buy it for me' — recovery is from YOU",
+               "\U0001F464", RED),
+              ("Online paise ke badle cash nahi", "Never swap UPI money for hard cash with strangers", "\U0001F4B0",
+               AMBER)]
+    cards = [rule_card(k + 1, L(t), L(b), ic, col) for k, (t, b, ic, col) in enumerate(safety)]
 
     def safe_draw(f, c):
-        paste(f, text_img("Aapki suraksha ke 6 niyam", 56, "bold"), 120, 60)
+        paste(f, text_img(L("Aapki suraksha ke 8 niyam"), 56, "bold"), 120, 50)
         for k, im in enumerate(cards):
-            pop(f, im, 120 + (k % 2) * 860 + 410, 300 + (k // 2) * 190, c.appear(k + 1))
+            pop(f, im, 120 + (k % 2) * 860 + 410, 225 + (k // 2) * 160, c.appear(k + 1))
     shot([N("Aur ab, aapki suraksha ke kuch zaroori niyam.", "और अब, आपकी सुरक्षा के कुछ ज़रूरी नियम।"),
           N("Ek. Koi bhi bank ya police phone par KYC update ya paise nahi maangti.",
             "एक। कोई भी bank या police फ़ोन पर KYC update या पैसे नहीं माँगती।"),
@@ -606,8 +620,14 @@ def build(shots: pathlib.Path):
             "jaldi, utna zyada paisa bachta hai.",
             "पाँच। Fraud हो जाए तो तुरंत 1 9 3 0 पर call कीजिए या cyber crime dot gov dot in पर शिकायत कीजिए — जितनी "
             "जल्दी, उतना ज़्यादा पैसा बचता है।"),
-          N("Aur chhe. Phone ki location aur bank ke SMS alert hamesha chalu rakhiye.",
-            "और छह। फ़ोन की location और bank के SMS alert हमेशा चालू रखिए।")], safe_draw, nav)
+          N("Chhe. Phone ki location aur bank ke SMS alert hamesha chalu rakhiye.",
+            "छह। फ़ोन की location और bank के SMS alert हमेशा चालू रखिए।"),
+          N("Saat. Anjaan logon se paisa mat lijiye. Koi kahe main aapke account mein paise bhejta hoon, aap mere liye "
+            "kuch khareed do — woh fraud ka paisa hai, aur wasooli aapse hogi, fraudster se nahi.",
+            "सात। अनजान लोगों से पैसा मत लीजिए। कोई कहे मैं आपके account में पैसे भेजता हूँ, आप मेरे लिए कुछ ख़रीद दो "
+            "— वो fraud का पैसा है, और वसूली आपसे होगी, fraudster से नहीं।"),
+          N("Aur aath. Anjaan logon ke saath online paise ko nakad cash mein kabhi mat badliye.",
+            "और आठ। अनजान लोगों के साथ online पैसे को नक़द cash में कभी मत बदलिए।")], safe_draw, nav)
 
     # ================= 8. Nine rules
     rules = [("Turant trace", "\U0001F50D", SAFFRON), ("Sirf victim ka paisa hold", "\U0001F512", AMBER),
@@ -617,6 +637,7 @@ def build(shots: pathlib.Path):
              ("Har payment par location", "\U0001F4CD", (90, 160, 255))]
     tiles = []
     for name, ic, col in rules:
+        name = L(name)
         im = rounded((540, 150), 24, CARD + (255,), outline=col + (255,), width=3)
         im.alpha_composite(badge(ic, 96, col, NAVY), (24, 27))
         lines = wrap(name, font(36, "bold"), 380)
@@ -624,7 +645,7 @@ def build(shots: pathlib.Path):
             ImageDraw.Draw(im).text((140, 30 + j * 44 + (22 if len(lines) == 1 else 0)), ln, font=font(36, "bold"),
                                     fill=WHITE)
         tiles.append(im)
-    heading = text_img("RakshakPay ke nau niyam", 64, "bold")
+    heading = text_img(L("RakshakPay ke nau niyam"), 64, "bold")
 
     def rules_draw(f, c):
         paste(f, heading, 120, 90)
@@ -659,7 +680,7 @@ def build(shots: pathlib.Path):
         actor(f, "priya", 1170, 1000, 600, c, expr="happy", pose="cheer")
         actor(f, "mahesh", 1590, 1000, 600, c, expr="happy", pose="wave")
         pop(f, logo(170), W / 2, 130, min(1, c.t / 0.5))
-        pop(f, text_img("RakshakPay — har rupaye ki raksha", 54, "black", (40, 30, 90), align="center"), W / 2, 260,
+        pop(f, text_img(L("RakshakPay — har rupaye ki raksha"), 54, "black", (40, 30, 90), align="center"), W / 2, 260,
             min(1, (c.t - 0.3) / 0.5))
     shot([N("RakshakPay — har rupaye ki raksha.", "रक्षक पे — हर रुपये की रक्षा।")], ending, home_bg)
     return out
@@ -667,10 +688,22 @@ def build(shots: pathlib.Path):
 
 # ---------------------------------------------------------------- render
 
-def main(shots_dir, work_dir, out):
+def main(shots_dir, work_dir, out, lang="hi"):
+    global LANG
+    LANG = lang
     shots, work = pathlib.Path(shots_dir), pathlib.Path(work_dir)
     work.mkdir(parents=True, exist_ok=True)
     plan = build(shots)
+    if LANG == "en":
+        from story_en import EN, VOICES_EN, spoken
+        ms.VOICES.update(VOICES_EN)
+        missing = [l.roman for lines, _, _ in plan for l in lines if l.roman not in EN]
+        if missing:
+            raise SystemExit("No English for: " + repr(missing))
+        for lines, _, _ in plan:
+            for l in lines:
+                l.roman = EN[l.roman]
+                l.deva = spoken(l.roman)
     preview = out.endswith("preview")
 
     audio, timeline = bytearray(), []
@@ -750,4 +783,4 @@ def main(shots_dir, work_dir, out):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    main(*sys.argv[1:5])
