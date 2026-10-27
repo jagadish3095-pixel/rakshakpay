@@ -77,6 +77,59 @@ def police_office(w, h):
     return im
 
 
+def atm_booth(w, h, bank="GODAVARI BANK ATM", city="DEOGHAR"):
+    """An ATM booth: tiled walls, the machine with a green screen, a cash slot."""
+    im = Image.new("RGBA", (w, h), (226, 232, 238, 255))
+    d = ImageDraw.Draw(im)
+    floor = int(h * 0.80)
+    for x in range(0, w, 90):
+        d.line((x, 0, x, floor), fill=(210, 216, 224), width=2)
+    d.rectangle((0, floor, w, h), fill=(150, 156, 166))
+    d.rectangle((0, 0, w, int(h * 0.11)), fill=(0, 105, 92))
+    d.text((40, int(h * 0.015)), f"{bank}  •  {city}", font=_font(int(h * 0.06)), fill=(255, 255, 255))
+    mx = int(w * 0.62)
+    d.rounded_rectangle((mx, int(h * 0.22), mx + 420, floor), 24, fill=(70, 78, 90), outline=(40, 44, 52), width=6)
+    d.rounded_rectangle((mx + 50, int(h * 0.27), mx + 370, int(h * 0.47)), 12, fill=(10, 40, 30))
+    d.text((mx + 74, int(h * 0.30)), "WELCOME", font=_font(30), fill=(90, 255, 160))
+    d.text((mx + 74, int(h * 0.36)), "INSERT CARD", font=_font(26, False), fill=(90, 255, 160))
+    d.rectangle((mx + 90, int(h * 0.52), mx + 330, int(h * 0.545)), fill=(20, 20, 24))  # card slot
+    for r in range(3):
+        for k in range(3):
+            d.rounded_rectangle((mx + 140 + k * 52, int(h * 0.58) + r * 44, mx + 180 + k * 52,
+                                 int(h * 0.58) + r * 44 + 34), 6, fill=(200, 204, 210))
+    d.rectangle((mx + 90, int(h * 0.74), mx + 330, int(h * 0.765)), fill=(20, 20, 24))  # cash slot
+    return im
+
+
+def branch(w, h, bank="KAVERI BANK", place="HOME BRANCH"):
+    """A bank branch desk with a nameplate, a computer and a document tray."""
+    im = Image.new("RGBA", (w, h), (238, 230, 248, 255))
+    d = ImageDraw.Draw(im)
+    floor = int(h * 0.80)
+    d.rectangle((0, floor, w, h), fill=(170, 160, 190))
+    d.rectangle((0, 0, w, int(h * 0.12)), fill=(103, 58, 160))
+    d.text((40, int(h * 0.02)), f"{bank}  •  {place}", font=_font(int(h * 0.06)), fill=(255, 255, 255))
+    d.rounded_rectangle((int(w * 0.1), int(h * 0.2), int(w * 0.3), int(h * 0.42)), 14, fill=(255, 255, 255),
+                        outline=(150, 130, 180), width=5)
+    d.text((int(w * 0.12), int(h * 0.24)), "KYC", font=_font(int(h * 0.05)), fill=(103, 58, 160))
+    d.text((int(w * 0.12), int(h * 0.32)), "Re-verification", font=_font(int(h * 0.028), False), fill=(90, 80, 110))
+    return im
+
+
+def branch_desk(im):
+    """The desk drawn in front of the officer (call after drawing her)."""
+    w, h = im.size
+    d = ImageDraw.Draw(im)
+    floor = int(h * 0.80)
+    top = int(floor - h * 0.22)
+    d.rectangle((int(w * 0.40), top, int(w * 0.95), floor), fill=(150, 110, 80), outline=(110, 80, 60), width=6)
+    d.rectangle((int(w * 0.40), top, int(w * 0.95), top + 24), fill=(120, 86, 62))
+    d.rounded_rectangle((int(w * 0.58), top + 50, int(w * 0.77), top + 110), 8, fill=(240, 232, 210))
+    d.text((int(w * 0.59), top + 60), "LAKSHMI • OFFICER", font=_font(26), fill=(60, 40, 30))
+    d.rectangle((int(w * 0.80), top - 150, int(w * 0.92), top - 10), fill=(40, 44, 52))
+    d.rectangle((int(w * 0.81), top - 140, int(w * 0.91), top - 30), fill=(120, 200, 255))
+
+
 def shop(w, h):
     """Jaipur Mobile Hub: shelves of phones, a counter and a QR stand."""
     im = Image.new("RGBA", (w, h), (255, 240, 214, 255))

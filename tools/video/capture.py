@@ -32,8 +32,26 @@ def main(app: str, out: str, steps_file: str) -> None:
             str(profile), channel="msedge", headless=True, **VIEWPORTS[app],
             geolocation={"latitude": 12.9716, "longitude": 77.5946}, permissions=["geolocation"])
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        for s in steps:
-            if "goto" in s:
+        run(ctx, page, steps, out_dir)
+        ctx.close()
+
+
+def run(ctx, page, steps, out_dir):
+    for s in steps:
+        if True:
+            if "interactive" in s:
+                # Keeps the browser open: runs <dir>/next.json whenever it appears, until it holds {"end": 1}.
+                f = pathlib.Path(s["interactive"]) / "next.json"
+                while True:
+                    while not f.exists():
+                        page.wait_for_timeout(500)
+                    more = json.loads(f.read_text(encoding="utf-8"))
+                    f.unlink()
+                    if any("end" in m for m in more):
+                        break
+                    run(ctx, page, more, out_dir)
+                    (f.parent / "done.txt").write_text("ok")
+            elif "goto" in s:
                 page.goto(s["goto"])
             elif "storage" in s:
                 for k, v in s["storage"].items():
@@ -41,6 +59,8 @@ def main(app: str, out: str, steps_file: str) -> None:
                 page.reload()
             elif "deny_location" in s:
                 ctx.clear_permissions()
+            elif "geo" in s:
+                ctx.set_geolocation({"latitude": s["geo"][0], "longitude": s["geo"][1]})
             elif "allow_location" in s:
                 ctx.grant_permissions(["geolocation"])
             elif "wait" in s:
@@ -54,8 +74,7 @@ def main(app: str, out: str, steps_file: str) -> None:
                 page.keyboard.press(s["key"])
             elif "shot" in s:
                 page.screenshot(path=str(out_dir / f"{s['shot']}.png"))
-                print("saved", s["shot"])
-        ctx.close()
+                print("saved", s["shot"], flush=True)
 
 
 if __name__ == "__main__":
